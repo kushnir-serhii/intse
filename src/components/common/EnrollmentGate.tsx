@@ -114,7 +114,7 @@ export default function EnrollmentGate({ children }: { children: React.ReactNode
   if (status === 'loading') {
     return (
       <div className="bg-bg flex min-h-screen items-center justify-center">
-        <div className="size-10 animate-spin rounded-full border-4 border-[#9397ab] border-t-[#9184d9]" />
+        <div className="size-10 animate-spin rounded-full border-4 border-neutral-500 border-t-accent" />
       </div>
     );
   }

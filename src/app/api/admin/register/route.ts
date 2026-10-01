@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
 
-import Admin from '@/lib/db/models/Admin';
+import User from '@/lib/db/models/User';
 import { connectDB } from '@/lib/mongodb';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'dev-secret-change-me');
@@ -32,21 +32,28 @@ export async function POST(request: NextRequest): Promise<Response> {
   try {
     await connectDB();
 
-    const existing = await Admin.findOne({ username: username.trim() });
+    const existing = await User.findOne({
+      $or: [{ username: username.trim() }, { visitorId: username.trim() }],
+    });
     if (existing) {
       return Response.json({ error: 'username_taken' }, { status: 409 });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const admin = await Admin.create({ username: username.trim(), passwordHash, role: 'user' });
+    const user = await User.create({
+      visitorId: username.trim(),
+      username: username.trim(),
+      passwordHash,
+      role: 'user',
+    });
 
-    const token = await new SignJWT({ sub: admin.username, role: admin.role })
+    const token = await new SignJWT({ sub: user.visitorId, role: user.role })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('24h')
       .sign(JWT_SECRET);
 
-    const response = Response.json({ ok: true, role: admin.role });
+    const response = Response.json({ ok: true, role: user.role });
 
     const headers = new Headers(response.headers);
     headers.set(

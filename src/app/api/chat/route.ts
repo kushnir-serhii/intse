@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import OpenAI from 'openai';
 
 import { verifySession } from '@/lib/auth/verifySession';
-import Visitor from '@/lib/db/models/Visitor';
+import User from '@/lib/db/models/User';
 import { resetIfNeeded } from '@/lib/db/resetIfNeeded';
 import { connectDB } from '@/lib/mongodb';
 import { getOpenAIClient } from '@/lib/openai';
@@ -121,12 +121,12 @@ export async function POST(request: NextRequest): Promise<Response> {
       byoKey = apiKey;
     }
 
-    const adminSession = await verifySession(request);
-    const isAdmin = adminSession?.role === 'admin';
+    const session = await verifySession(request);
+    const isOwner = session?.role === 'owner';
 
-    if (!isAdmin) {
+    if (!isOwner) {
       await connectDB();
-      const visitor = await Visitor.findOneAndUpdate(
+      const visitor = await User.findOneAndUpdate(
         { visitorId },
         {
           $setOnInsert: {
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
 
     // Admins always use the default client (no limits); non-admins use BYO or default
-    const openai = !isAdmin && byoKey ? new OpenAI({ apiKey: byoKey }) : getOpenAIClient();
+    const openai = !isOwner && byoKey ? new OpenAI({ apiKey: byoKey }) : getOpenAIClient();
 
     let stream: Awaited<ReturnType<typeof openai.chat.completions.create>>;
     try {
@@ -223,9 +223,9 @@ export async function POST(request: NextRequest): Promise<Response> {
           controller.close();
 
           // Fire-and-forget counter increment (do not await)
-          // For admins, only increment if a visitorId was provided
+          // For the owner, only increment if a visitorId was provided
           if (visitorId) {
-            Visitor.findOneAndUpdate(
+            User.findOneAndUpdate(
               { visitorId },
               { $inc: { dailyRequests: 1, dailyTokens: totalTokens } },
             ).catch(console.error);

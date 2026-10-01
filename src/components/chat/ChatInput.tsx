@@ -408,7 +408,7 @@ export function ChatInput({
                 Auto dialog
               </button>
               <span className="flex-1" />
-              {role === 'admin' && (
+              {role === 'owner' && (
                 <button
                   type="button"
                   aria-label="Reset daily limit"

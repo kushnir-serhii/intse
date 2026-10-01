@@ -10,7 +10,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (useUserStore.getState().role === 'admin') {
+    if (useUserStore.getState().role === 'owner') {
       router.push('/');
     }
   }, [router]);

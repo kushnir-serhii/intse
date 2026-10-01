@@ -53,10 +53,10 @@ export const Navigation: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
 
-  const isOwner = role === 'admin';
+  const isOwner = role === 'owner';
 
   async function handleSignOut(): Promise<void> {
-    if (role === 'admin') {
+    if (role === 'owner') {
       await fetch('/api/admin/logout', { method: 'POST' });
       useUserStore.getState().setRole(null);
       router.push('/login');

@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server';
 
-import { verifySession } from '@/lib/auth/verifySession';
-import Visitor from '@/lib/db/models/Visitor';
+import { verifyOwnerSession } from '@/lib/auth/verifySession';
+import User from '@/lib/db/models/User';
 import { connectDB } from '@/lib/mongodb';
 
 export async function GET(request: NextRequest): Promise<Response> {
-  const session = await verifySession(request);
+  const session = await verifyOwnerSession(request);
 
   if (!session) {
     return Response.json({ error: 'unauthorized' }, { status: 401 });
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     await connectDB();
 
     const [visitors, total] = await Promise.all([
-      Visitor.find(
+      User.find(
         {},
         { _id: 0, visitorId: 1, enrolledAt: 1, dailyRequests: 1, dailyTokens: 1, lastResetAt: 1 },
       )
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest): Promise<Response> {
         .skip((pageNum - 1) * limitNum)
         .limit(limitNum)
         .lean(),
-      Visitor.countDocuments(),
+      User.countDocuments(),
     ]);
 
     return Response.json({

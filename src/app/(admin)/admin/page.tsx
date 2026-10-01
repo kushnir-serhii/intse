@@ -60,7 +60,7 @@ export default function AdminPanelPage() {
   const [resetting, setResetting] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (role !== null && role !== 'admin') {
+    if (role !== null && role !== 'owner') {
       router.replace('/');
       return;
     }
@@ -81,7 +81,7 @@ export default function AdminPanelPage() {
   }, [role, router]);
 
   useEffect(() => {
-    if (role !== null && role !== 'admin') return;
+    if (role !== null && role !== 'owner') return;
 
     fetch('/api/admin/visitors?page=1&limit=50')
       .then((r) => {

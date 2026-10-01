@@ -24,3 +24,9 @@ export async function verifySession(request: NextRequest): Promise<SessionPayloa
     return null;
   }
 }
+
+/** Session only if it belongs to the owner — use for owner-only endpoints. */
+export async function verifyOwnerSession(request: NextRequest): Promise<SessionPayload | null> {
+  const session = await verifySession(request);
+  return session?.role === 'owner' ? session : null;
+}

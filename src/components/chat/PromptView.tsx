@@ -32,7 +32,7 @@ export function PromptView() {
   return (
     <div className="mx-auto flex w-full max-w-[680px] flex-1 flex-col gap-4 px-4 py-6">
       <div className="flex flex-col gap-1.5">
-        <span className="text-[11px] tracking-[0.1em] text-neutral-600 uppercase">
+        <span className="text-[11px] tracking-widest text-neutral-600 uppercase">
           Running prompt
         </span>
         <span className="text-[13px] text-neutral-500">

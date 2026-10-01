@@ -17,7 +17,7 @@ export const Header: React.FC = () => {
   const dailyRequestLimit = useUserStore((state) => state.dailyRequestLimit);
 
   async function handleSignOut(): Promise<void> {
-    if (role === 'admin') {
+    if (role === 'owner') {
       await fetch('/api/admin/logout', { method: 'POST' });
     }
     useUserStore.getState().reset();

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import Visitor from '@/lib/db/models/Visitor';
+import User from '@/lib/db/models/User';
 import { resetIfNeeded } from '@/lib/db/resetIfNeeded';
 import { connectDB } from '@/lib/mongodb';
 
@@ -27,9 +27,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
     );
 
-    const count = await Visitor.countDocuments({ enrolledAt: { $gte: startOfToday } });
+    const count = await User.countDocuments({ role: 'user', enrolledAt: { $gte: startOfToday } });
 
-    const visitor = await Visitor.findOne({ visitorId });
+    const visitor = await User.findOne({ visitorId });
 
     if (!visitor) {
       return NextResponse.json({ error: 'not_found' }, { status: 404 });
