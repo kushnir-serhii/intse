@@ -1,40 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { connectDB } from '@/lib/mongodb'
-import Visitor from '@/lib/db/models/Visitor'
-import { resetIfNeeded } from '@/lib/db/resetIfNeeded'
+import { NextRequest, NextResponse } from 'next/server';
+
+import Visitor from '@/lib/db/models/Visitor';
+import { resetIfNeeded } from '@/lib/db/resetIfNeeded';
+import { connectDB } from '@/lib/mongodb';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
-    await connectDB()
+    await connectDB();
 
-    const visitorId = request.nextUrl.searchParams.get('visitorId')
+    const visitorId = request.nextUrl.searchParams.get('visitorId');
 
     if (!visitorId) {
-      return NextResponse.json({ error: 'missing_visitor_id' }, { status: 400 })
+      return NextResponse.json({ error: 'missing_visitor_id' }, { status: 400 });
     }
 
-    const capEnv = process.env.DAILY_VISITOR_CAP
-    const parsedCap = parseInt(capEnv ?? '', 10)
-    const cap = Number.isFinite(parsedCap) ? parsedCap : 100
+    const capEnv = process.env.DAILY_VISITOR_CAP;
+    const parsedCap = parseInt(capEnv ?? '', 10);
+    const cap = Number.isFinite(parsedCap) ? parsedCap : 100;
 
-    const limitEnv = process.env.DAILY_REQUEST_LIMIT
-    const parsedLimit = parseInt(limitEnv ?? '', 10)
-    const dailyRequestLimit = Number.isFinite(parsedLimit) ? parsedLimit : 20
+    const limitEnv = process.env.DAILY_REQUEST_LIMIT;
+    const parsedLimit = parseInt(limitEnv ?? '', 10);
+    const dailyRequestLimit = Number.isFinite(parsedLimit) ? parsedLimit : 20;
 
-    const now = new Date()
+    const now = new Date();
     const startOfToday = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
-    )
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
 
-    const count = await Visitor.countDocuments({ enrolledAt: { $gte: startOfToday } })
+    const count = await Visitor.countDocuments({ enrolledAt: { $gte: startOfToday } });
 
-    const visitor = await Visitor.findOne({ visitorId })
+    const visitor = await Visitor.findOne({ visitorId });
 
     if (!visitor) {
-      return NextResponse.json({ error: 'not_found' }, { status: 404 })
+      return NextResponse.json({ error: 'not_found' }, { status: 404 });
     }
 
-    const freshVisitor = await resetIfNeeded(visitor)
+    const freshVisitor = await resetIfNeeded(visitor);
 
     return NextResponse.json(
       {
@@ -44,10 +45,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         dailyRequestLimit,
         dailyTokens: freshVisitor.dailyTokens,
       },
-      { status: 200 }
-    )
+      { status: 200 },
+    );
   } catch (error: unknown) {
-    console.error('[GET /api/stats]', error)
-    return NextResponse.json({ error: 'server_error' }, { status: 500 })
+    console.error('[GET /api/stats]', error);
+    return NextResponse.json({ error: 'server_error' }, { status: 500 });
   }
 }

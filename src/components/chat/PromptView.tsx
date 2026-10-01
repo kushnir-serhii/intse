@@ -2,22 +2,32 @@
 
 import Link from 'next/link';
 import { PiArrowUpRightBold } from 'react-icons/pi';
-import { useSettingsStore } from '@/store/useSettingsStore';
 
-const DEFAULT_PROMPT =
-  'Act as a patient conversation partner. Keep the conversation going with one question at a time, and gently correct my English once per answer.';
+import { buildSystemPrompt } from '@/lib/systemPrompt';
+import { selectIsCustomInUse, useSettingsStore } from '@/store/useSettingsStore';
 
 /**
  * The "Prompt" tab of the coached session — the instruction the assistant
- * is running under, read-only here and editable in settings (design doc 1c).
+ * is running under, read-only here. The "Edit on Dashboard" link deep-links to
+ * the Dashboard's AI instruction card (`#ai-instruction`) where it is edited.
  */
 export function PromptView() {
-  const useCustomPrompt = useSettingsStore((s) => s.useCustomPrompt);
   const customPrompt = useSettingsStore((s) => s.customPrompt);
   const targetLanguage = useSettingsStore((s) => s.targetLanguage);
   const level = useSettingsStore((s) => s.level);
+  const mode = useSettingsStore((s) => s.customPromptMode);
+  const customInUse = useSettingsStore(selectIsCustomInUse);
 
-  const active = useCustomPrompt && customPrompt.trim() ? customPrompt : DEFAULT_PROMPT;
+  const active = buildSystemPrompt(
+    targetLanguage,
+    level,
+    customInUse ? customPrompt : undefined,
+    mode,
+  );
+  const hint =
+    mode === 'append'
+      ? 'Added to the default instruction. Your practice language and level always apply.'
+      : 'Your practice language and level always apply.';
 
   return (
     <div className="mx-auto flex w-full max-w-[680px] flex-1 flex-col gap-4 px-4 py-6">
@@ -26,19 +36,22 @@ export function PromptView() {
           Running prompt
         </span>
         <span className="text-[13px] text-neutral-500">
-          {useCustomPrompt && customPrompt.trim() ? 'Custom' : 'Default'} · {targetLanguage} · {level}
+          {!customInUse ? 'Default' : mode === 'append' ? 'Default + mine' : 'Custom'} ·{' '}
+          {targetLanguage} · {level}
         </span>
       </div>
 
-      <div className="rounded-xl border border-neutral-800 bg-surface p-4 text-sm leading-relaxed text-neutral-300">
+      <div className="bg-surface rounded-xl border border-neutral-800 p-4 text-sm leading-relaxed whitespace-pre-wrap text-neutral-300">
         {active}
       </div>
 
+      {customInUse ? <p className="text-[13px] text-neutral-500">{hint}</p> : null}
+
       <Link
-        href="/settings"
-        className="flex h-[34px] items-center gap-1.5 self-start rounded-lg border border-neutral-800 px-3 text-[13px] text-neutral-300 transition-colors hover:border-accent-700 hover:text-accent-200"
+        href="/dashboard#ai-instruction"
+        className="hover:border-accent-700 hover:text-accent-200 flex h-[34px] items-center gap-1.5 self-start rounded-lg border border-neutral-800 px-3 text-[13px] text-neutral-300 transition-colors"
       >
-        Edit in settings
+        Edit on Dashboard
         <PiArrowUpRightBold className="text-[13px]" aria-hidden />
       </Link>
     </div>

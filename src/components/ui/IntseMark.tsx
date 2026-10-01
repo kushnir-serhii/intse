@@ -51,22 +51,58 @@ export function IntseMark({ size = 28, state = 'idle', className, title }: Intse
         </>
       ) : state === 'listening' ? (
         <>
-          <path d="M14 19 q4 -4 8 0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-          <path d="M26 19 q4 -4 8 0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+          <path
+            d="M14 19 q4 -4 8 0"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+          />
+          <path
+            d="M26 19 q4 -4 8 0"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+          />
           <circle cx="24" cy="27" r="3" fill="currentColor" />
         </>
       ) : state === 'pleased' ? (
         <>
-          <path d="M14 18 q4 4 8 0" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-          <path d="M26 18 q4 4 8 0" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-          <path d="M17 26 q7 6 14 0" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+          <path
+            d="M14 18 q4 4 8 0"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M26 18 q4 4 8 0"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
+          <path
+            d="M17 26 q7 6 14 0"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+          />
         </>
       ) : (
         <>
           <circle cx="18" cy="20" r="2.6" fill="currentColor" />
           <circle cx="30" cy="20" r="2.6" fill="currentColor" />
           {size > 22 ? (
-            <path d="M18 27 q6 4 12 0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+            <path
+              d="M18 27 q6 4 12 0"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            />
           ) : null}
         </>
       )}

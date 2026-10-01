@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+
 import { useSettingsStore } from '@/store/useSettingsStore';
 
 interface NamePromptProps {
@@ -29,13 +30,13 @@ export default function NamePrompt({ onDone }: NamePromptProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-bg px-4">
+    <div className="bg-bg fixed inset-0 z-50 flex flex-col items-center justify-center px-4">
       <div className="flex w-full max-w-[400px] flex-col items-center gap-4">
-        <h1 className="font-[var(--font-inter)] text-2xl font-bold text-ink">
+        <h1 className="text-ink text-2xl font-[var(--font-inter)] font-bold">
           What&apos;s your name?
         </h1>
 
-        <p className="font-[var(--font-inter)] text-sm font-normal text-neutral-500">
+        <p className="text-sm font-[var(--font-inter)] font-normal text-neutral-500">
           We&apos;ll use it to greet you.
         </p>
 
@@ -45,14 +46,14 @@ export default function NamePrompt({ onDone }: NamePromptProps) {
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Your name"
-          className="w-full rounded-md border border-neutral-800 bg-surface px-4 py-3 text-ink placeholder-neutral-500 outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+          className="bg-surface text-ink focus:border-accent focus:ring-accent w-full rounded-md border border-neutral-800 px-4 py-3 placeholder-neutral-500 outline-none focus:ring-1"
           autoFocus
         />
 
         <button
           type="button"
           onClick={handleConfirm}
-          className="w-full rounded-md bg-accent px-4 py-3 font-[var(--font-inter)] font-semibold text-white hover:bg-[#388bfd] active:bg-[#1f6feb]"
+          className="bg-accent w-full rounded-md px-4 py-3 font-[var(--font-inter)] font-semibold text-white hover:bg-[#388bfd] active:bg-[#1f6feb]"
         >
           Let&apos;s go
         </button>
@@ -60,7 +61,7 @@ export default function NamePrompt({ onDone }: NamePromptProps) {
         <button
           type="button"
           onClick={handleSkip}
-          className="font-[var(--font-inter)] text-sm text-neutral-500 hover:text-ink"
+          className="hover:text-ink text-sm font-[var(--font-inter)] text-neutral-500"
         >
           Skip
         </button>

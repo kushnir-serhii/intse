@@ -1,4 +1,5 @@
 import Link from 'next/link';
+
 import { IntseMark } from './IntseMark';
 
 interface LogoProps {
@@ -13,7 +14,7 @@ export const Logo: React.FC<LogoProps> = ({ showWordmark = false }) => {
         <IntseMark size={28} />
       </span>
       {showWordmark && (
-        <span className="font-heading text-[17px] font-medium tracking-[0.02em] text-ink">
+        <span className="font-heading text-ink text-[17px] font-medium tracking-[0.02em]">
           INTSE
         </span>
       )}

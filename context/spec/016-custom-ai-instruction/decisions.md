@@ -1,0 +1,24 @@
+# Decisions — 016 Custom AI Instruction
+
+- [spec] Q: What prompt capabilities are needed? → A: User: one own prompt per user, reset to default prompt, select which prompt to use.
+- [spec] ASSUMED: Instruction stays on-device (no cross-device sync), consistent with product definition.
+- [spec] ASSUMED: Autosave kept from spec 013; adds a "Saved" note.
+- [spec] ASSUMED: "My instruction" cannot be selected while empty; clearing it while in use falls back to Default with a note.
+- [spec] ASSUMED: Practice language and level always apply on top of whichever instruction is in use.
+- [spec] TECH-HINT: Use the existing character counter for the 2,000 limit (no confirm modal needed — reset is non-destructive).
+- [spec] Q: What should "Reset to default" do? → A: Only switch to Default — keep the user's text; no confirmation needed.
+- [spec] Q: Character limit for the personal AI instruction? → A: 2,000 characters.
+- [tech] Q: How to test (no test runner in repo)? → A: Manual only — no Vitest; consolidated manual acceptance checklist.
+- [tech] Q: What does the Default card show? → A: Full system prompt (frame + default body), so it changes with language/level.
+- [tech] Q: Over-2,000-character custom instruction? → A: Show a warning state during input and prevent submit; do NOT use cursor-not-allowed anywhere (user dislikes it).
+- [tech] ASSUMED: Box still blocks typing past 2,000 (functional AC); warning state starts at 90% and turns to limit state at 2,000; Chat send is blocked with a message if stored text is somehow over the limit; server rejects with 400 custom_prompt_too_long as a backstop.
+- [tech] ASSUMED: Prompt tab shows the full default system prompt when Default is in use, and the user's own text (plus "language and level always apply" hint) when Custom is in use.
+- [tech] ASSUMED: Instruction body + language/level frame live in src/lib/systemPrompt.ts (client-importable); store exposes selectIsCustomInUse; persist version 1 migration clamps/cleans stale data.
+- [tasks] ASSUMED: SKIP_TESTS = true (no test runner, manual-only decision); Verify tasks are smoke checks; final slice is a manual acceptance walk-through run by general-purpose instead of the Feature Testing & Regression slice.
+- [tasks] Q: Plan review → A: Looks good — keep it as saved
+- [implement] Q: `npm run lint` was already broken before this spec (`next lint` removed in Next 16, ESLint 9 crashes on the config); every Verify task requires it. How to handle? → A: Wait until another agent fixes lint, then continue.
+- [implement] Q: Lint now runs but fails repo-wide on formatting (899 problems, 887 auto-fixable). How to proceed? → A: Run `eslint --fix` now (repo-wide).
+- [implement] Q: After autofix, lint still fails on 2 pre-existing errors (SessionHeader set-state-in-effect, useTTS use-before-declare). Handle how? → A: Fix both now, then resume Slice 1 Verify.
+- [implement] Q: An "append vs replace" custom-instruction mode (`customPromptMode`, store v2 migration, route, ChatInput, PromptView, `CustomInstructionModeSwitch.tsx`) was added outside the task plan. Keep it? → A: Intended, keep it as part of 016.
+- [implement] ASSUMED: With the append/replace mode kept, the Prompt tab keeps a mode-aware label ("Default" / "Default + mine" / "Custom") and shows the composed text per mode; otherwise the Slice 6 task applies as written.
+- [implement] Q: Final walk-through failed only on pre-existing `disabled:cursor-not-allowed` in 5 files outside 016 (LanguageSelectorCard, ChatInput, SessionHeader, login, admin). How to close out? → A: Remove all 5 now, then mark the walk-through done.

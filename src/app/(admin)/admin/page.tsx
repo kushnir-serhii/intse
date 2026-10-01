@@ -1,18 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUserStore } from '@/store/useUserStore';
+import { useCallback, useEffect, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+
 import { useNotification } from '@/hooks/useNotification';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+import { useUserStore } from '@/store/useUserStore';
 
 interface StatsData {
   totalVisitors: number;
@@ -47,9 +40,9 @@ interface ResetResponse {
 
 function KpiCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-neutral-800 bg-surface p-5">
-      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-neutral-500">{label}</p>
-      <p className="text-3xl font-bold text-ink">{value.toLocaleString()}</p>
+    <div className="bg-surface rounded-lg border border-neutral-800 p-5">
+      <p className="mb-1 text-xs font-medium tracking-wide text-neutral-500 uppercase">{label}</p>
+      <p className="text-ink text-3xl font-bold">{value.toLocaleString()}</p>
     </div>
   );
 }
@@ -80,7 +73,9 @@ export default function AdminPanelPage() {
         }
         return r.json() as Promise<StatsData>;
       })
-      .then((data) => { if (data) setStats(data); })
+      .then((data) => {
+        if (data) setStats(data);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [role, router]);
@@ -96,43 +91,53 @@ export default function AdminPanelPage() {
         }
         return r.json() as Promise<VisitorsResponse>;
       })
-      .then((data) => { if (data) setVisitors(data.visitors); })
+      .then((data) => {
+        if (data) setVisitors(data.visitors);
+      })
       .catch(() => {})
       .finally(() => setVisitorsLoading(false));
   }, [role, router]);
 
-  const handleReset = useCallback(async (visitorId: string): Promise<void> => {
-    setResetting((prev) => new Set(prev).add(visitorId));
-    try {
-      const r = await fetch(`/api/admin/visitors/${visitorId}/reset`, { method: 'POST' });
-      if (!r.ok) {
+  const handleReset = useCallback(
+    async (visitorId: string): Promise<void> => {
+      setResetting((prev) => new Set(prev).add(visitorId));
+      try {
+        const r = await fetch(`/api/admin/visitors/${visitorId}/reset`, { method: 'POST' });
+        if (!r.ok) {
+          toast('error', 'Reset failed.');
+          return;
+        }
+        const data = (await r.json()) as ResetResponse;
+        setVisitors((prev) =>
+          prev.map((v) =>
+            v.visitorId === visitorId
+              ? {
+                  ...v,
+                  dailyRequests: data.dailyRequests,
+                  dailyTokens: data.dailyTokens,
+                  lastResetAt: data.lastResetAt,
+                }
+              : v,
+          ),
+        );
+        toast('info', 'Visitor reset.');
+      } catch {
         toast('error', 'Reset failed.');
-        return;
+      } finally {
+        setResetting((prev) => {
+          const next = new Set(prev);
+          next.delete(visitorId);
+          return next;
+        });
       }
-      const data = await r.json() as ResetResponse;
-      setVisitors((prev) =>
-        prev.map((v) =>
-          v.visitorId === visitorId
-            ? { ...v, dailyRequests: data.dailyRequests, dailyTokens: data.dailyTokens, lastResetAt: data.lastResetAt }
-            : v,
-        ),
-      );
-      toast('info', 'Visitor reset.');
-    } catch {
-      toast('error', 'Reset failed.');
-    } finally {
-      setResetting((prev) => {
-        const next = new Set(prev);
-        next.delete(visitorId);
-        return next;
-      });
-    }
-  }, [toast]);
+    },
+    [toast],
+  );
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto bg-bg px-4 py-8 sm:px-8">
+    <div className="bg-bg flex flex-1 flex-col overflow-y-auto px-4 py-8 sm:px-8">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="font-[--font-inter] text-2xl font-bold text-ink">Admin Panel</h1>
+        <h1 className="text-ink font-[--font-inter] text-2xl font-bold">Admin Panel</h1>
       </div>
 
       {loading && <p className="text-sm text-neutral-500">Loading stats…</p>}
@@ -147,17 +152,31 @@ export default function AdminPanelPage() {
           </div>
 
           {stats.chartData.length > 0 ? (
-            <section className="mb-8 rounded-lg border border-neutral-800 bg-surface p-6">
-              <h2 className="mb-4 text-sm font-semibold text-ink">
+            <section className="bg-surface mb-8 rounded-lg border border-neutral-800 p-6">
+              <h2 className="text-ink mb-4 text-sm font-semibold">
                 Top Visitors by Messages Today
               </h2>
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={stats.chartData} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#3f424d" />
-                  <XAxis dataKey="label" tick={{ fill: '#9397ab', fontSize: 11 }} axisLine={{ stroke: '#3f424d' }} tickLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fill: '#9397ab', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fill: '#9397ab', fontSize: 11 }}
+                    axisLine={{ stroke: '#3f424d' }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fill: '#9397ab', fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
                   <Tooltip
-                    contentStyle={{ background: '#232532', border: '1px solid #3f424d', borderRadius: 8 }}
+                    contentStyle={{
+                      background: '#232532',
+                      border: '1px solid #3f424d',
+                      borderRadius: 8,
+                    }}
                     labelStyle={{ color: '#e9e9ed', fontSize: 12 }}
                     itemStyle={{ color: '#9397ab', fontSize: 12 }}
                   />
@@ -166,7 +185,7 @@ export default function AdminPanelPage() {
               </ResponsiveContainer>
             </section>
           ) : (
-            <section className="mb-8 rounded-lg border border-neutral-800 bg-surface p-6">
+            <section className="bg-surface mb-8 rounded-lg border border-neutral-800 p-6">
               <p className="text-sm text-neutral-500">No visitor activity today yet.</p>
             </section>
           )}
@@ -174,12 +193,10 @@ export default function AdminPanelPage() {
       )}
 
       {/* Visitors Table */}
-      <section className="rounded-lg border border-neutral-800 bg-surface p-6">
-        <h2 className="mb-4 text-sm font-semibold text-ink">Visitors</h2>
+      <section className="bg-surface rounded-lg border border-neutral-800 p-6">
+        <h2 className="text-ink mb-4 text-sm font-semibold">Visitors</h2>
 
-        {visitorsLoading && (
-          <p className="text-sm text-neutral-500">Loading visitors…</p>
-        )}
+        {visitorsLoading && <p className="text-sm text-neutral-500">Loading visitors…</p>}
 
         {!visitorsLoading && visitors.length === 0 && (
           <p className="text-sm text-neutral-500">No visitors yet.</p>
@@ -190,29 +207,37 @@ export default function AdminPanelPage() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-neutral-800">
-                  <th className="pb-3 pr-4 text-xs font-medium uppercase tracking-wide text-neutral-500">Visitor ID</th>
-                  <th className="pb-3 pr-4 text-xs font-medium uppercase tracking-wide text-neutral-500">Enrolled</th>
-                  <th className="pb-3 pr-4 text-xs font-medium uppercase tracking-wide text-neutral-500">Requests Today</th>
-                  <th className="pb-3 pr-4 text-xs font-medium uppercase tracking-wide text-neutral-500">Tokens Today</th>
-                  <th className="pb-3 pr-4 text-xs font-medium uppercase tracking-wide text-neutral-500">Last Reset</th>
-                  <th className="pb-3 text-xs font-medium uppercase tracking-wide text-neutral-500">Actions</th>
+                  <th className="pr-4 pb-3 text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                    Visitor ID
+                  </th>
+                  <th className="pr-4 pb-3 text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                    Enrolled
+                  </th>
+                  <th className="pr-4 pb-3 text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                    Requests Today
+                  </th>
+                  <th className="pr-4 pb-3 text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                    Tokens Today
+                  </th>
+                  <th className="pr-4 pb-3 text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                    Last Reset
+                  </th>
+                  <th className="pb-3 text-xs font-medium tracking-wide text-neutral-500 uppercase">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {visitors.map((visitor) => (
                   <tr key={visitor.visitorId} className="border-b border-neutral-800 last:border-0">
-                    <td className="py-3 pr-4 font-mono text-xs text-ink">
+                    <td className="text-ink py-3 pr-4 font-mono text-xs">
                       …{visitor.visitorId.slice(-8)}
                     </td>
                     <td className="py-3 pr-4 text-neutral-500">
                       {new Date(visitor.enrolledAt).toLocaleDateString()}
                     </td>
-                    <td className="py-3 pr-4 text-ink">
-                      {visitor.dailyRequests.toLocaleString()}
-                    </td>
-                    <td className="py-3 pr-4 text-ink">
-                      {visitor.dailyTokens.toLocaleString()}
-                    </td>
+                    <td className="text-ink py-3 pr-4">{visitor.dailyRequests.toLocaleString()}</td>
+                    <td className="text-ink py-3 pr-4">{visitor.dailyTokens.toLocaleString()}</td>
                     <td className="py-3 pr-4 text-neutral-500">
                       {new Date(visitor.lastResetAt).toLocaleDateString()}
                     </td>
@@ -220,8 +245,10 @@ export default function AdminPanelPage() {
                       <button
                         type="button"
                         disabled={resetting.has(visitor.visitorId)}
-                        onClick={() => { void handleReset(visitor.visitorId); }}
-                        className="rounded-md border border-neutral-800 px-3 py-1 text-xs font-medium text-neutral-500 transition-colors hover:border-red-500 hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-surface disabled:cursor-not-allowed disabled:opacity-40"
+                        onClick={() => {
+                          void handleReset(visitor.visitorId);
+                        }}
+                        className="focus:ring-offset-surface rounded-md border border-neutral-800 px-3 py-1 text-xs font-medium text-neutral-500 transition-colors hover:border-red-500 hover:text-red-400 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none disabled:opacity-40"
                       >
                         {resetting.has(visitor.visitorId) ? 'Resetting…' : 'Reset'}
                       </button>

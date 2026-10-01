@@ -1,19 +1,20 @@
-import { NextRequest } from 'next/server'
-import { connectDB } from '@/lib/mongodb'
-import Visitor from '@/lib/db/models/Visitor'
-import { verifySession } from '@/lib/auth/verifySession'
+import { NextRequest } from 'next/server';
+
+import { verifySession } from '@/lib/auth/verifySession';
+import Visitor from '@/lib/db/models/Visitor';
+import { connectDB } from '@/lib/mongodb';
 
 export async function GET(request: NextRequest): Promise<Response> {
-  const session = await verifySession(request)
+  const session = await verifySession(request);
 
   if (!session) {
-    return Response.json({ error: 'unauthorized' }, { status: 401 })
+    return Response.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  await connectDB()
+  await connectDB();
 
-  const todayUTC = new Date()
-  todayUTC.setUTCHours(0, 0, 0, 0)
+  const todayUTC = new Date();
+  todayUTC.setUTCHours(0, 0, 0, 0);
 
   const [aggregate, topVisitors] = await Promise.all([
     Visitor.aggregate([
@@ -41,19 +42,19 @@ export async function GET(request: NextRequest): Promise<Response> {
       .sort({ dailyRequests: -1 })
       .limit(10)
       .lean(),
-  ])
+  ]);
 
-  const totalVisitors: number = aggregate[0]?.total[0]?.count ?? 0
-  const todayData = aggregate[0]?.today[0]
-  const todayVisitors: number = todayData?.visitors ?? 0
-  const todayMessages: number = todayData?.messages ?? 0
-  const todayTokens: number = todayData?.tokens ?? 0
+  const totalVisitors: number = aggregate[0]?.total[0]?.count ?? 0;
+  const todayData = aggregate[0]?.today[0];
+  const todayVisitors: number = todayData?.visitors ?? 0;
+  const todayMessages: number = todayData?.messages ?? 0;
+  const todayTokens: number = todayData?.tokens ?? 0;
 
   const chartData = topVisitors.map((v) => ({
     label: v.visitorId.slice(-8),
     messages: v.dailyRequests,
     tokens: v.dailyTokens,
-  }))
+  }));
 
   return Response.json({
     totalVisitors,
@@ -61,5 +62,5 @@ export async function GET(request: NextRequest): Promise<Response> {
     todayMessages,
     todayTokens,
     chartData,
-  })
+  });
 }

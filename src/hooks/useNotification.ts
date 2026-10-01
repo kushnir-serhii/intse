@@ -1,5 +1,5 @@
+import type { ModalState, Toast } from '@/store/useNotificationStore';
 import { useNotificationStore } from '@/store/useNotificationStore';
-import type { Toast, ModalState } from '@/store/useNotificationStore';
 
 type ToastType = Toast['type'];
 

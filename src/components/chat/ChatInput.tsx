@@ -1,20 +1,24 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect, type KeyboardEvent } from 'react';
+import Link from 'next/link';
+import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import {
+  PiArrowCounterClockwiseBold,
   PiMicrophoneFill,
   PiPaperPlaneRightFill,
-  PiSlidersHorizontalBold,
   PiRepeatBold,
-  PiArrowCounterClockwiseBold,
 } from 'react-icons/pi';
-import { useChatStore } from '@/store/useChatStore';
-import { useUserStore } from '@/store/useUserStore';
-import { useSettingsStore } from '@/store/useSettingsStore';
+
 import { useNotification } from '@/hooks/useNotification';
 import { useSpeechToText } from '@/hooks/useSpeechToText';
+import { MAX_CUSTOM_INSTRUCTION_LENGTH } from '@/lib/systemPrompt';
+import { useChatStore } from '@/store/useChatStore';
+import { selectIsCustomInUse, selectMicLanguage, useSettingsStore } from '@/store/useSettingsStore';
+import { useUserStore } from '@/store/useUserStore';
 import { langToSpeechCode } from '@/utils/langToSpeechCode';
+
 import { CharCounter } from './CharCounter';
+import { ChatStatusBar } from './ChatStatusBar';
 
 const SUGGESTIONS = ['Ask me a question', 'Say it slower', 'Explain'];
 
@@ -28,7 +32,6 @@ interface ChatInputProps {
   onTTSToggle?: () => void;
   /** Text to drop into the composer (from an empty-state / suggestion tap). */
   seedText?: { value: string } | null;
-  onOpenSettings?: () => void;
 }
 
 export function ChatInput({
@@ -40,9 +43,9 @@ export function ChatInput({
   ttsEnabled: _ttsEnabled = false,
   onTTSToggle: _onTTSToggle,
   seedText = null,
-  onOpenSettings,
 }: ChatInputProps) {
   const [inputValue, setInputValue] = useState('');
+  const [instructionTooLong, setInstructionTooLong] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useNotification();
@@ -71,12 +74,14 @@ export function ChatInput({
         return;
       }
       const data = (await r.json()) as { dailyRequests: number };
-      useUserStore.getState().updateStats(
-        useUserStore.getState().visitorCount,
-        useUserStore.getState().dailyCap,
-        data.dailyRequests,
-        useUserStore.getState().dailyRequestLimit,
-      );
+      useUserStore
+        .getState()
+        .updateStats(
+          useUserStore.getState().visitorCount,
+          useUserStore.getState().dailyCap,
+          data.dailyRequests,
+          useUserStore.getState().dailyRequestLimit,
+        );
       toast('info', 'Daily limit reset.');
     } catch {
       toast('error', 'Reset failed.');
@@ -85,7 +90,8 @@ export function ChatInput({
     }
   }, [visitorId, toast]);
 
-  const lang = langToSpeechCode(useSettingsStore.getState().targetLanguage);
+  const micLanguage = useSettingsStore(selectMicLanguage);
+  const lang = langToSpeechCode(micLanguage);
   const { isListening, isSupported, startListening, stopListening } = useSpeechToText({
     lang,
     onInterimResult: (transcript) => setInputValue(transcript),
@@ -134,6 +140,8 @@ export function ChatInput({
   // Pick up seeded text from an empty-state / suggestion tap.
   useEffect(() => {
     if (seedText) {
+      // Seeding the composer from a parent-provided prompt is an intentional sync.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInputValue(seedText.value);
       textareaRef.current?.focus();
     }
@@ -148,12 +156,32 @@ export function ChatInput({
     } else if (!autoDialogActive && isListening) {
       stopListening();
     }
-  }, [autoDialogActive, isListening, isStreaming, speakingMessageId, startListening, stopListening]);
+  }, [
+    autoDialogActive,
+    isListening,
+    isStreaming,
+    speakingMessageId,
+    startListening,
+    stopListening,
+  ]);
 
   const handleSubmit = useCallback(
     async (overrideValue?: string) => {
       const userContent = (overrideValue ?? inputValue).trim();
       if (!userContent) return;
+
+      const settings = useSettingsStore.getState();
+      const customInUse = selectIsCustomInUse(settings);
+      if (customInUse && settings.customPrompt.trim().length > MAX_CUSTOM_INSTRUCTION_LENGTH) {
+        // Block before anything is added or cleared so the typed text is kept.
+        setInstructionTooLong(true);
+        // Voice path marks streaming before calling us; release it and stop
+        // auto-dialog so the mic doesn't re-arm into the same blocked send.
+        useChatStore.getState().setStreaming(false);
+        useChatStore.getState().setAutoDialogActive(false);
+        return;
+      }
+      setInstructionTooLong(false);
 
       useChatStore.getState().initSessionId();
       setInputValue('');
@@ -185,7 +213,8 @@ export function ChatInput({
             }),
             level: useSettingsStore.getState().level,
             customPrompt: useSettingsStore.getState().customPrompt,
-            useCustomPrompt: useSettingsStore.getState().useCustomPrompt,
+            useCustomPrompt: customInUse,
+            customPromptMode: useSettingsStore.getState().customPromptMode,
           }),
           signal: controller.signal,
         });
@@ -338,9 +367,20 @@ export function ChatInput({
           ))}
         </div>
 
+        {instructionTooLong && (
+          <p role="alert" className="text-warning text-[13px]">
+            Your instruction is over {MAX_CUSTOM_INSTRUCTION_LENGTH.toLocaleString('en-US')}{' '}
+            characters.{' '}
+            <Link href="/dashboard" className="text-accent-200 underline">
+              Shorten it on the Dashboard.
+            </Link>
+          </p>
+        )}
+
         <div className="flex items-end gap-2.5">
           {/* Composer */}
-          <div className="bg-surface flex min-w-0 flex-1 flex-col gap-2 rounded-[18px] border border-neutral-800 px-3.5 py-3">
+          <div className="bg-surface relative flex min-w-0 flex-1 flex-col gap-2 overflow-hidden rounded-[18px] border border-neutral-800 px-3.5 py-3">
+            <ChatStatusBar />
             <textarea
               ref={textareaRef}
               rows={1}
@@ -354,15 +394,6 @@ export function ChatInput({
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                aria-label="Prompt settings"
-                disabled={controlsDisabled}
-                onClick={() => onOpenSettings?.()}
-                className="hover:text-accent-300 grid h-8 w-8 place-items-center rounded-lg text-neutral-500 transition-colors disabled:opacity-40"
-              >
-                <PiSlidersHorizontalBold className="text-[17px]" />
-              </button>
-              <button
-                type="button"
                 aria-label="Auto dialog"
                 aria-pressed={autoDialogActive}
                 disabled={controlsDisabled}
@@ -374,7 +405,7 @@ export function ChatInput({
                 }`}
               >
                 <PiRepeatBold className="text-[15px]" />
-                Auto
+                Auto dialog
               </button>
               <span className="flex-1" />
               {role === 'admin' && (
@@ -394,7 +425,15 @@ export function ChatInput({
               {inputValue.length > 0 ? (
                 <CharCounter count={inputValue.length} />
               ) : apiKey === '' ? (
-                <span className="text-xs text-neutral-600 tabular-nums">
+                <span
+                  className={`text-xs tabular-nums ${
+                    messagesLeft === 0
+                      ? 'text-danger'
+                      : messagesLeft <= dailyRequestLimit * 0.2
+                        ? 'text-warning'
+                        : 'text-neutral-600'
+                  }`}
+                >
                   {messagesLeft} left today
                 </span>
               ) : null}
@@ -407,7 +446,7 @@ export function ChatInput({
             aria-label={hasText ? 'Send' : isListening ? 'Stop' : 'Hold to speak'}
             disabled={disabled || (hasText ? false : !isSupported)}
             onClick={() => (hasText ? void handleSubmit() : startListening())}
-            className={`border-accent bg-accent/10 text-accent-200 hover:bg-accent/18 grid h-14 w-14 shrink-0 place-items-center rounded-full border text-2xl shadow-[0_0_0_6px_rgba(145,132,217,0.10)] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+            className={`border-accent bg-accent/10 text-accent-200 hover:bg-accent/18 grid h-14 w-14 shrink-0 place-items-center rounded-full border text-2xl shadow-[0_0_0_6px_rgba(145,132,217,0.10)] transition-colors disabled:opacity-40 ${
               isListening ? 'animate-pulse' : ''
             }`}
           >

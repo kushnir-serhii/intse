@@ -1,6 +1,6 @@
-import { Sidebar, Header } from '@/layout';
 import EnrollmentGate from '@/components/common/EnrollmentGate';
-import { ToastContainer, ConfirmModal } from '@/components/ui';
+import { ConfirmModal, ToastContainer } from '@/components/ui';
+import { Header, Sidebar } from '@/layout';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (

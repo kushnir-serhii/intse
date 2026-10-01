@@ -1,22 +1,23 @@
-import { NextRequest } from 'next/server'
-import { connectDB } from '@/lib/mongodb'
-import Visitor from '@/lib/db/models/Visitor'
-import { verifySession } from '@/lib/auth/verifySession'
+import { NextRequest } from 'next/server';
+
+import { verifySession } from '@/lib/auth/verifySession';
+import Visitor from '@/lib/db/models/Visitor';
+import { connectDB } from '@/lib/mongodb';
 
 export async function GET(request: NextRequest): Promise<Response> {
-  const session = await verifySession(request)
+  const session = await verifySession(request);
 
   if (!session) {
-    return Response.json({ error: 'unauthorized' }, { status: 401 })
+    return Response.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  const { searchParams } = request.nextUrl
+  const { searchParams } = request.nextUrl;
 
-  const rawPage = searchParams.get('page') ?? '1'
-  const rawLimit = searchParams.get('limit') ?? '50'
+  const rawPage = searchParams.get('page') ?? '1';
+  const rawLimit = searchParams.get('limit') ?? '50';
 
-  const pageNum = Number(rawPage)
-  const limitNum = Number(rawLimit)
+  const pageNum = Number(rawPage);
+  const limitNum = Number(rawLimit);
 
   if (
     !Number.isInteger(pageNum) ||
@@ -25,11 +26,11 @@ export async function GET(request: NextRequest): Promise<Response> {
     limitNum < 1 ||
     limitNum > 200
   ) {
-    return Response.json({ error: 'invalid_params' }, { status: 400 })
+    return Response.json({ error: 'invalid_params' }, { status: 400 });
   }
 
   try {
-    await connectDB()
+    await connectDB();
 
     const [visitors, total] = await Promise.all([
       Visitor.find(
@@ -41,16 +42,16 @@ export async function GET(request: NextRequest): Promise<Response> {
         .limit(limitNum)
         .lean(),
       Visitor.countDocuments(),
-    ])
+    ]);
 
     return Response.json({
       visitors,
       total,
       page: pageNum,
       limit: limitNum,
-    })
+    });
   } catch (error: unknown) {
-    console.error('[GET /api/admin/visitors]', error)
-    return Response.json({ error: 'internal_server_error' }, { status: 500 })
+    console.error('[GET /api/admin/visitors]', error);
+    return Response.json({ error: 'internal_server_error' }, { status: 500 });
   }
 }

@@ -1,8 +1,9 @@
 'use client';
 
-import { cn } from '@/utils/cn';
 import { useEffect, useRef, useState } from 'react';
 import { BsThreeDotsVertical } from 'react-icons/bs';
+
+import { cn } from '@/utils/cn';
 
 interface MessageMenuProps {
   content: string;
@@ -98,9 +99,9 @@ export function MessageMenu({
         type="button"
         aria-haspopup="true"
         aria-label="Message options"
-        aria-expanded={isOpen}  
+        aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
-        className="grid h-8 w-8 place-items-center rounded-lg text-neutral-500 transition-colors duration-150 hover:bg-neutral-900 hover:text-accent-300 focus:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+        className="hover:text-accent-300 focus-visible:ring-accent grid h-8 w-8 place-items-center rounded-lg text-neutral-500 transition-colors duration-150 hover:bg-neutral-900 focus:outline-none focus-visible:ring-1"
       >
         <BsThreeDotsVertical className="h-4 w-4" />
       </button>
@@ -110,7 +111,7 @@ export function MessageMenu({
         <div
           role="menu"
           className={cn(
-            'absolute top-full z-50 mt-1 min-w-[130px] rounded-lg border border-neutral-800 bg-surface py-1 shadow-lg',
+            'bg-surface absolute top-full z-50 mt-1 min-w-[130px] rounded-lg border border-neutral-800 py-1 shadow-lg',
             side === 'left' ? 'right-0' : 'left-0',
           )}
         >
@@ -119,7 +120,7 @@ export function MessageMenu({
               type="button"
               role="menuitem"
               onClick={handleRepeat}
-              className="w-full px-3 py-1.5 text-left text-sm text-ink transition-colors duration-100 hover:bg-neutral-800 focus:outline-none focus-visible:bg-neutral-800"
+              className="text-ink w-full px-3 py-1.5 text-left text-sm transition-colors duration-100 hover:bg-neutral-800 focus:outline-none focus-visible:bg-neutral-800"
             >
               Repeat
             </button>
@@ -131,7 +132,7 @@ export function MessageMenu({
                 type="button"
                 role="menuitem"
                 onClick={() => setIsSpeedOpen((prev) => !prev)}
-                className="w-full px-3 py-1.5 text-left text-sm text-ink transition-colors duration-100 hover:bg-neutral-800 focus:outline-none focus-visible:bg-neutral-800"
+                className="text-ink w-full px-3 py-1.5 text-left text-sm transition-colors duration-100 hover:bg-neutral-800 focus:outline-none focus-visible:bg-neutral-800"
               >
                 Speed {ttsSpeed.toFixed(1)}×
               </button>
@@ -154,7 +155,7 @@ export function MessageMenu({
                 type="button"
                 role="menuitem"
                 onClick={() => setIsVoiceOpen((prev) => !prev)}
-                className="w-full px-3 py-1.5 text-left text-sm text-ink transition-colors duration-100 hover:bg-neutral-800 focus:outline-none focus-visible:bg-neutral-800"
+                className="text-ink w-full px-3 py-1.5 text-left text-sm transition-colors duration-100 hover:bg-neutral-800 focus:outline-none focus-visible:bg-neutral-800"
               >
                 {voices.find((v) => v.voiceURI === selectedVoiceURI)?.name ?? 'Voice'}
               </button>
@@ -176,7 +177,7 @@ export function MessageMenu({
                             onVoiceChange(voice.voiceURI);
                             setIsVoiceOpen(false);
                           }}
-                          className={`w-full px-3 py-1.5 text-left text-sm transition-colors duration-100 hover:bg-neutral-800 focus:outline-none focus-visible:bg-neutral-800 ${isSelected ? "text-accent" : "text-ink"}`}
+                          className={`w-full px-3 py-1.5 text-left text-sm transition-colors duration-100 hover:bg-neutral-800 focus:outline-none focus-visible:bg-neutral-800 ${isSelected ? 'text-accent' : 'text-ink'}`}
                         >
                           {isSelected ? `✓ ${voice.name}` : voice.name}
                         </button>
@@ -192,7 +193,7 @@ export function MessageMenu({
             type="button"
             role="menuitem"
             onClick={handleCopy}
-            className="w-full px-3 py-1.5 text-left text-sm text-ink transition-colors duration-100 hover:bg-neutral-800 focus:outline-none focus-visible:bg-neutral-800"
+            className="text-ink w-full px-3 py-1.5 text-left text-sm transition-colors duration-100 hover:bg-neutral-800 focus:outline-none focus-visible:bg-neutral-800"
           >
             {copied ? 'Copied!' : 'Copy'}
           </button>

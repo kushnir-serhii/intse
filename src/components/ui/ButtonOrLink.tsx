@@ -1,8 +1,9 @@
 'use client';
 
-import { cn } from '@/utils/cn';
 import Link from 'next/link';
 import React from 'react';
+
+import { cn } from '@/utils/cn';
 
 type ButtonOrLinkProps = {
   ariaLabel?: string;

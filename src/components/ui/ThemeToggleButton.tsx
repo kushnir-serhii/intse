@@ -1,7 +1,8 @@
 import React from 'react';
-import { useSettingsStore } from '@/store/useSettingsStore';
+
 import { IconMoon, IconSun } from '@/assets/icons';
 import { ButtonOrLink } from '@/components/ui';
+import { useSettingsStore } from '@/store/useSettingsStore';
 
 export const ThemeToggleButton: React.FC = () => {
   const { toggleTheme, theme } = useSettingsStore();

@@ -38,12 +38,40 @@ Your primary task is to create a new functional specification file. You will det
 # INTERACTION
 
 - Use the `AskUserQuestion` tool for multiple-choice questions instead of plain text or numbered lists.
+- A skipped or unanswered question is never a stop signal. Mark the unresolved detail with a `[NEEDS CLARIFICATION: …]` marker and continue through the remaining steps, including writing `functional-spec.md`.
+
+<!-- Editor note (not an instruction): this rule is necessary but not sufficient. In `claude -p` a dismissed AskUserQuestion ends the turn, so a deliverable Write placed after such a question never runs unattended. The fix is structural — keep the Write ahead of any dismissable question, then refine afterward. -->
 
 ---
 
 # PROCESS
 
 Follow this process precisely.
+
+### Mode Detection (do this first)
+
+Before determining a topic, decide whether this run **creates** a new spec or **amends** an existing one. Parse `<user_prompt>` for a reference to an existing spec — a spec number (`002`), a spec directory name (`002-task-scheduling`), or an explicit "amend/update spec NNN: \<what changed\>" phrasing (how the generated `fix-bug` command's `amend-spec` stage invokes this command after a behavior-changing fix).
+
+- If the prompt names a spec whose `context/spec/[index]-[short-name]/functional-spec.md` exists, go to **Update Mode** below.
+- Otherwise, fall through to **Creation Mode** (Step 1 onward) — today's flow.
+
+Only an explicit reference to an existing spec routes to Update Mode; a fresh topic — even one adjacent to an existing feature — is Creation Mode. When the reference is ambiguous, confirm with the user via `AskUserQuestion` rather than guessing.
+
+### Update Mode
+
+Amend the named spec **in place**. This mode never runs `create-spec-directory.sh` and never allocates a new index — it edits the existing directory.
+
+1.  Read the named spec's `functional-spec.md`.
+2.  Identify the acceptance criteria (and any parent requirement statements) the change affects. Edit them to match the corrected behavior, holding to the same non-technical, user-facing Language Rules above. Leave untouched criteria as they are.
+3.  Append a dated entry under a `## Change Log` heading (add the heading if the spec predates it): the date, the source reference (e.g. the bug id or the fix description passed in), and what behavior changed and why.
+4.  **Status:** do not force a transition. A spec amended after an already-verified fix stays `Completed` — the Change Log records the amendment. Only move Status back (e.g. to `In Review`) when the user is amending a spec that was not yet verified.
+5.  Save in the same directory under the same index. Report the amended path, which criteria changed, and the new Change Log entry. The amendment is complete — do not run the directory script or the Creation-Mode steps.
+
+If the prompt referenced a spec that does not exist (no matching `functional-spec.md`), do not fabricate one in Update Mode — tell the user, and offer to create it fresh via Creation Mode instead. If they accept, carry only the described behavior change into Creation Mode as the proposed topic — strip the amendment phrasing (e.g. `amend spec 999: add export` → topic `add export`) — and confirm the topic with the user before proceeding.
+
+---
+
+The steps below are **Creation Mode** — reached when Mode Detection finds no existing spec to amend.
 
 ### Step 1: Determine the Specification Topic
 
@@ -58,6 +86,7 @@ Your first goal is to determine the **topic** - the single, specific feature or 
 
 ### Step 2: Gather Context and Extract Known Information
 
+- **Consume source material already in the prompt — before interviewing, and without a new question.** Scan `<user_prompt>` for ticket IDs, URLs, or file paths (a Jira/Linear/GitHub issue reference, a Confluence/Notion link, an attached design doc, a local path). When any are present, fetch or read them first and fold what they say into the known-information extraction below — this is what turns a cold interview into a warm one, cutting the questions in Step 3 to the few genuinely open details. Use whatever transport is available for each reference, in this order of preference: a matching MCP tool already in context, a CLI already on PATH (`gh`, `glab`, a tracker CLI), `WebFetch` for a plain URL, or a direct file read for a path; when `context/sources/sources.md` exists with `## Status: configured`, use the transport it records for that service. Do **not** add an "any source material?" question — the ask is net-negative when the prompt carries no references. Read only what the prompt already points at; list anything referenced but unreachable in your Step 3 summary so the user knows that context is missing, rather than silently skipping it. (When this command is invoked by the generated `/implement-feature` flow, the fetch stage has already pulled the ticket and its surrounding context and passes them in — read that bundle rather than re-fetching.)
 - Read `context/product/product-definition.md` and `context/product/roadmap.md` to understand goals, target audience, and priorities.
 - Focus on your topic only. Extract all information already documented about it:
   - The purpose and rationale (why it exists)
@@ -75,7 +104,7 @@ Your first goal is to determine the **topic** - the single, specific feature or 
 - **Non-Technical Questions Only:** Your questions must be answerable by a product manager or designer — never ask about data models, API design, storage, architecture, state management, caching, or any implementation detail. Frame every question in terms of what the user sees, does, or experiences. If you need to understand a behavior, ask "What should the user see when…?" not "How should the system handle…?"
 - **Never Surface Technical Names:** When you encounter technical identifiers (field names, API response keys, database columns, type names, etc.) in context files, silently map them to plain-language labels. Do not ask the user to confirm whether a user-facing label corresponds to a technical field name. If you are unsure what a technical term means in user-facing language, ask "What does the user call [plain description of the concept]?" — never expose the raw identifier.
 - **Self-Check Before Every Question:** Re-read your question. If it contains a code identifier (camelCase, snake_case, PascalCase, or a name that only appears in source code / API schemas), rewrite the question without it. If the question cannot be asked without referencing the identifier, it is a technical question — drop it.
-- You will now fill the template section by section, but you must actively probe for details that are not yet documented.
+- You will now draft the specification, section by section, from the context in Step 2. Probe for the details each section needs, but do not block on questions: where an answer is not already documented, capture the question inline as a `[NEEDS CLARIFICATION: …]` marker and keep drafting. You resolve these markers with the user in **Step 6**, after the spec is saved — so an unattended run still produces a complete draft. The examples below show the depth of probing to aim for.
 
 1.  **Overview and Rationale (The "Why"):**
     - Use the information extracted about your **topic** from Step 2 as the foundation.
@@ -85,13 +114,21 @@ Your first goal is to determine the **topic** - the single, specific feature or 
 2.  **Functional Requirements (The "What"):**
     - Ask the user to describe what needs to be done from a user's perspective.
     - For every piece of information the user gives you, think like a tester and clarify ambiguities. If the user answers in technical terms, rewrite the information into plain, user-facing language before including it in the spec.
+    - Where applicable, capture the boundary and error behavior the user sees: what error message appears, what limits exist (file size, format, count), and what happens when the action fails.
     - If the user says: "The user needs to be able to upload a profile picture."
-    - You MUST ask clarifying questions like: "Great. Let's break that down. What file formats should be allowed (e.g., JPG, PNG)? Is there a maximum file size? What should happen after the upload is successful? What specific error message should the user see if it fails?"
-    - Mark every unresolved detail with `[NEEDS CLARIFICATION: your specific question]` directly in the draft. Example: "The user should see an error message. [NEEDS CLARIFICATION: What should the exact text of the error message be?]"
+    - Probe with clarifying questions like: "Great. Let's break that down. What file formats should be allowed (e.g., JPG, PNG)? Is there a maximum file size? What should happen after the upload is successful? What specific error message should the user see if it fails?" — for any that stay unanswered, leave a `[NEEDS CLARIFICATION: …]` marker rather than stopping.
+    - If information is missing, mark every unresolved detail with `[NEEDS CLARIFICATION: your specific question]` directly in the draft. Example: "The user should see an error message. [NEEDS CLARIFICATION: What should the exact text of the error message be?]"
 
 3.  **Acceptance Criteria:**
     - After clarifying a requirement, turn it into a concrete, testable acceptance criterion.
     - Acceptance criteria must read as manual QA test scripts that a non-developer could execute. Describe only what is visible on screen and what the user does — never reference internal system behavior.
+    - Each acceptance criterion follows the same three-part shape as the example below: a precondition (Given), a user action (When), and a visible outcome (Then). Include Given only when the precondition affects the outcome. The words **when** and **then** must both appear, in that order, within a **single sentence**, in every criterion — including short or seemingly obvious ones. Two ways it slips: splitting the pair across two sentences, and replacing it with a declarative retelling.
+      - ✅ "When the user submits the form with an empty name, then they see: 'Name is required.'" — one sentence carrying both `when` and `then`.
+      - ❌ "The user submits the form with an empty name. They see: 'Name is required.'" — the same content split into two declarative sentences, with neither keyword.
+      - ❌ "Given the user is signed out, the sign-in dialog appears." — a Given with no `when`/`then` pair.
+    - If any `[NEEDS CLARIFICATION: …]` markers remain on the parent requirement in **Functional Requirements**, ask clarifying questions and resolve the markers before writing acceptance criteria.
+    - If a clarifying answer reveals a constraint or detail that belongs to the parent requirement (not just the acceptance criterion), update the requirement statement in **Functional Requirements** before continuing. The requirement and its acceptance criteria must agree on level of detail.
+    - For requirements that capture boundary or error behavior, include at least one acceptance criterion covering the failure path (e.g., "When the user uploads a file larger than 5MB, then they see: 'File too large. Maximum size is 5MB.'").
     - Example Statement: "Okay, I've captured that. So a clear acceptance criterion would be: 'Given the user is on their profile page, when they upload a PNG file smaller than 5MB, then the new picture appears on their profile and a 'Success' message is shown.' Is that correct?"
 
 4.  **Scope and Boundaries:**
@@ -100,17 +137,23 @@ Your first goal is to determine the **topic** - the single, specific feature or 
     - Focus only on clarifying boundaries within the current **topic** itself.
     - Example: "To keep this focused on [your topic], what related aspects should we explicitly not include? For example, should we include [specific feature within this topic]?"
 
-### Step 4: Self-Review (Language Check)
+### Step 4: Self-Review (Language and Ambiguity Check)
 
 - Before presenting to the user, re-read the entire draft end-to-end. For every sentence, ask: "Would this make sense to someone who has never seen the codebase?" Replace any developer-facing language with plain, non-technical wording in the same language the user is using. Remove any references to internal system behavior, code, or architecture that slipped in.
+- Then re-read **Functional Requirements** — both the requirement statements and their acceptance criteria — for vague or unmeasurable wording: words like "fast", "user-friendly", or "as appropriate" that a tester could not verify. Make each one concrete in user-perceivable terms (e.g., "the search feels fast" becomes "search results appear within 2 seconds"), or, if the user has not decided the specific value yet, replace it with a `[NEEDS CLARIFICATION: …]` marker so it is resolved in Step 6, after the spec is saved. Quantify only where the user would notice the difference — do not force a number onto every sentence; narrative sections like **Overview and Rationale** may stay qualitative.
 
-### Step 5: Final Review
+**Definition of Done.** A self-review, not an approval gate — the file is still written at the end of the process. Confirm the draft meets both:
 
-- Present the complete, populated template to the user for a final review. Ask, "Here is the complete draft of the functional specification. Please review it for any inaccuracies or missing details."
+1.  **No vague wording remains in requirements or acceptance criteria.** The check above already resolved each vague term — made it concrete in user-perceivable terms or converted it to a `[NEEDS CLARIFICATION: …]` marker; confirm none slipped through, and if one did, resolve it per the check above. Any term converted to a marker is resolved with the user in Step 6, or left in place in an unattended run.
+2.  **Every requirement has at least one acceptance criterion.** Confirm that each functional requirement in **Functional Requirements** carries at least one acceptance criterion in the When/Then shape (Given optional). If a requirement has none, write one for it before saving. Then re-read the acceptance criteria one bullet at a time — not the set as a whole — and rewrite any bullet that does not carry both `when` and `then` in a single sentence, per Step 3.3.
 
-### Step 6: File Generation
+### Step 5: File Generation
 
-1.  **Create Short Name:** Once the user approves the draft, generate a short, kebab-case name from the specification's title (e.g., "User Profile Picture Upload" becomes `user-profile-picture-upload`).
+1.  **Create Short Name:** Generate a short, kebab-case name from the specification's title (e.g., "User Profile Picture Upload" becomes `user-profile-picture-upload`).
 2.  **Execute Directory Script:** Execute the shell script with the short name as a parameter: `.awos/scripts/create-spec-directory.sh [short-name]`. This will create a new directory (e.g., `context/spec/001-user-profile-picture-upload`).
-3.  **Save the File:** Write the final, approved specification content into the `functional-spec.md` file within the newly created directory.
-4.  Report the saved path and the next command: `/awos:tech`.
+3.  **Save the File:** Write the specification content into the `functional-spec.md` file within the newly created directory. **Write the file without waiting for approval** — a spec is reversible (re-run `/awos:spec` to revise) and any open questions are already captured as `[NEEDS CLARIFICATION: …]` markers in the draft, so the deliverable is never gated behind a confirmation an unattended run cannot answer.
+
+### Step 6: Final Review and Recommend Next Step
+
+1.  Present the saved specification and ask the user to review it for inaccuracies or missing details. Resolve each `[NEEDS CLARIFICATION: …]` marker with them via `AskUserQuestion`, offering the assumption you would otherwise make as the recommended first option (with a free-text option for open-ended markers); fold each answer back into the relevant requirement and its acceptance criteria, then re-save. If no answer comes (e.g. an unattended `claude -p` run), leave the markers in place; the user — or `/awos:tech` — can resolve them later.
+2.  Report the saved path and the next command: `/awos:tech`.

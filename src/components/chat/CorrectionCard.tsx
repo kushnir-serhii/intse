@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import {
-  PiPencilSimpleBold,
-  PiSpeakerHighBold,
   PiMicrophoneBold,
+  PiPencilSimpleBold,
   PiQuestionBold,
+  PiSpeakerHighBold,
 } from 'react-icons/pi';
 
 interface CorrectionCardProps {
@@ -38,9 +38,9 @@ export function CorrectionCard({
   const [showWhy, setShowWhy] = useState(false);
 
   return (
-    <div className="animate-message-in w-[300px] max-w-full self-end overflow-hidden rounded-xl border border-neutral-800 bg-surface">
+    <div className="animate-message-in bg-surface w-[300px] max-w-full self-end overflow-hidden rounded-xl border border-neutral-800">
       <div className="flex items-center gap-1.5 border-b border-neutral-900 px-3 py-2.5">
-        <PiPencilSimpleBold className="text-sm text-accent-300" aria-hidden />
+        <PiPencilSimpleBold className="text-accent-300 text-sm" aria-hidden />
         <span className="text-xs tracking-[0.06em] text-neutral-400 uppercase">One fix</span>
         <span className="flex-1" />
         <span className="text-xs text-neutral-500">Grammar</span>
@@ -48,7 +48,7 @@ export function CorrectionCard({
 
       <div className="flex flex-col gap-1.5 px-3 py-2.5">
         <span className="text-sm leading-snug text-neutral-500 line-through">{original}</span>
-        <span className="text-[15px] leading-snug text-accent-100">{suggestion}</span>
+        <span className="text-accent-100 text-[15px] leading-snug">{suggestion}</span>
         {showWhy && note ? (
           <span className="mt-1 text-[13px] leading-snug text-neutral-400">{note}</span>
         ) : null}
@@ -59,11 +59,7 @@ export function CorrectionCard({
           <PiSpeakerHighBold className="text-[15px]" aria-hidden />
           Hear
         </button>
-        <button
-          type="button"
-          className={action}
-          onClick={() => onSayItBack?.(suggestion)}
-        >
+        <button type="button" className={action} onClick={() => onSayItBack?.(suggestion)}>
           <PiMicrophoneBold className="text-[15px]" aria-hidden />
           Say it back
         </button>

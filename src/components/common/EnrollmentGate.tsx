@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useUserStore } from '@/store/useUserStore';
-import { useSettingsStore } from '@/store/useSettingsStore';
+
 import NamePrompt from '@/components/ui/NamePrompt';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { useUserStore } from '@/store/useUserStore';
 
 // Internal component — not exported
 function DailyLimitScreen({ count, cap }: { count: number; cap: number }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-bg px-4">
+    <div className="bg-bg flex min-h-screen flex-col items-center justify-center gap-6 px-4">
       {/* INTSE text mark */}
       <div className="rounded-full bg-white p-[13px]">
         <span className="flex size-6 items-center justify-center text-xs font-bold text-black">
@@ -16,7 +17,7 @@ function DailyLimitScreen({ count, cap }: { count: number; cap: number }) {
         </span>
       </div>
 
-      <h1 className="max-w-md text-center font-[--font-inter] text-2xl font-bold text-ink">
+      <h1 className="text-ink max-w-md text-center font-[--font-inter] text-2xl font-bold">
         We&apos;ve reached our daily visitor limit. Come back tomorrow!
       </h1>
 
@@ -45,7 +46,7 @@ export default function EnrollmentGate({ children }: { children: React.ReactNode
       try {
         const meRes = await fetch('/api/admin/me');
         if (meRes.ok) {
-          const meData = await meRes.json() as { role: string; sub: string };
+          const meData = (await meRes.json()) as { role: string; sub: string };
           useUserStore.getState().setRoleFromApi(meData.role);
           // Named users use their username as visitorId (no anonymous cookie)
           if (meData.sub) {
@@ -65,16 +66,20 @@ export default function EnrollmentGate({ children }: { children: React.ReactNode
         // Returning visitor — fetch updated stats
         fetch(`/api/stats?visitorId=${visitorId}`)
           .then((res) => res.json())
-          .then((data: { count: number; cap: number; dailyRequests: number; dailyRequestLimit: number }) => {
-            useUserStore.getState().updateStats(
-              data.count,
-              data.cap,
-              data.dailyRequests,
-              data.dailyRequestLimit,
-            );
-            useUserStore.getState().setRole('user');
-            setStatus('enrolled');
-          })
+          .then(
+            (data: {
+              count: number;
+              cap: number;
+              dailyRequests: number;
+              dailyRequestLimit: number;
+            }) => {
+              useUserStore
+                .getState()
+                .updateStats(data.count, data.cap, data.dailyRequests, data.dailyRequestLimit);
+              useUserStore.getState().setRole('user');
+              setStatus('enrolled');
+            },
+          )
           .catch(() => {
             useUserStore.getState().setRole('user');
             setStatus('enrolled');
@@ -108,7 +113,7 @@ export default function EnrollmentGate({ children }: { children: React.ReactNode
 
   if (status === 'loading') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-bg">
+      <div className="bg-bg flex min-h-screen items-center justify-center">
         <div className="size-10 animate-spin rounded-full border-4 border-[#9397ab] border-t-[#9184d9]" />
       </div>
     );

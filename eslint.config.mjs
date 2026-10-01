@@ -1,40 +1,37 @@
-import { FlatCompat } from '@eslint/eslintrc';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { defineConfig, globalIgnores } from 'eslint/config';
+import nextCoreWebVitals from 'eslint-config-next/core-web-vitals';
+import nextTypescript from 'eslint-config-next/typescript';
+import prettier from 'eslint-plugin-prettier';
+import simpleImportSort from 'eslint-plugin-simple-import-sort';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const compat = new FlatCompat({ baseDirectory: __dirname });
+export default defineConfig([
+  ...nextCoreWebVitals,
+  ...nextTypescript,
 
-export default [
-  // Extend Next.js recommended rules
-  ...compat.extends('next/core-web-vitals', 'next/typescript'),
-
-  // Prettier integration
   {
     plugins: {
-      prettier: require('eslint-plugin-prettier'),
+      prettier,
+      'simple-import-sort': simpleImportSort,
     },
     rules: {
       'prettier/prettier': 'error',
-    },
-  },
-
-  // Simple import sort
-  {
-    plugins: { 'simple-import-sort': require('eslint-plugin-simple-import-sort') },
-    rules: {
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
-    },
-  },
-
-  // Custom TS/React rules
-  {
-    rules: {
       'react/react-in-jsx-scope': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       'no-console': 'warn',
     },
   },
-];
+
+  globalIgnores([
+    '.next/**',
+    'node_modules/**',
+    'out/**',
+    'build/**',
+    'dist/**',
+    'coverage/**',
+    'next-env.d.ts',
+    '.awos-tune/**',
+    '.claude/**',
+  ]),
+]);

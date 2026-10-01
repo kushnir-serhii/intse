@@ -1,14 +1,26 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
+import { IoSettingsOutline } from 'react-icons/io5';
+
 import { IconHome, IconLogout } from '@/assets/icons';
 import { ButtonOrLink } from '@/components/ui';
 import { useUserStore } from '@/store/useUserStore';
-import { IoSettingsOutline } from 'react-icons/io5';
 
 function IconDashboard({ className }: { className?: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
       <rect x="3" y="3" width="7" height="7" rx="1" />
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -19,7 +31,18 @@ function IconDashboard({ className }: { className?: string }) {
 
 function IconAdmin({ className }: { className?: string }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
     </svg>
   );
@@ -51,16 +74,6 @@ export const Navigation: React.FC = () => {
             <IconHome className="size-5 dark:text-white" />
           </ButtonOrLink>
         </li>
-        <li className="flex items-center justify-center">
-          <ButtonOrLink
-            href="/settings"
-            isActive={pathname === '/settings'}
-            aria-label="Settings"
-            variant="ghost"
-          >
-            <IoSettingsOutline className="size-5 dark:text-white" />
-          </ButtonOrLink>
-        </li>
         {role !== null && (
           <li className="flex items-center justify-center">
             <ButtonOrLink
@@ -73,6 +86,16 @@ export const Navigation: React.FC = () => {
             </ButtonOrLink>
           </li>
         )}
+        <li className="flex items-center justify-center">
+          <ButtonOrLink
+            href="/settings"
+            isActive={pathname === '/settings'}
+            aria-label="Settings"
+            variant="ghost"
+          >
+            <IoSettingsOutline className="size-5 dark:text-white" />
+          </ButtonOrLink>
+        </li>
         {isOwner && (
           <li className="flex items-center justify-center">
             <ButtonOrLink

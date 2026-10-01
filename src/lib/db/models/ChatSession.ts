@@ -1,17 +1,17 @@
-import mongoose, { Model, Schema } from 'mongoose'
+import mongoose, { Model, Schema } from 'mongoose';
 
 export interface IChatMessage {
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: number
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: number;
 }
 
 export interface IChatSession {
-  sessionId: string
-  visitorId: string
-  messages: IChatMessage[]
-  createdAt: Date
-  updatedAt: Date
+  sessionId: string;
+  visitorId: string;
+  messages: IChatMessage[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const ChatMessageSchema = new Schema<IChatMessage>(
@@ -21,7 +21,7 @@ const ChatMessageSchema = new Schema<IChatMessage>(
     timestamp: { type: Number, required: true },
   },
   { _id: false },
-)
+);
 
 const ChatSessionSchema = new Schema<IChatSession>(
   {
@@ -33,12 +33,11 @@ const ChatSessionSchema = new Schema<IChatSession>(
     collection: 'chat_sessions',
     timestamps: true,
   },
-)
+);
 
-ChatSessionSchema.index({ visitorId: 1, updatedAt: -1 })
+ChatSessionSchema.index({ visitorId: 1, updatedAt: -1 });
 
 const ChatSession: Model<IChatSession> =
-  mongoose.models.ChatSession ??
-  mongoose.model<IChatSession>('ChatSession', ChatSessionSchema)
+  mongoose.models.ChatSession ?? mongoose.model<IChatSession>('ChatSession', ChatSessionSchema);
 
-export default ChatSession
+export default ChatSession;

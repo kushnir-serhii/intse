@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { PiSpeakerHighBold, PiGaugeBold, PiCopyBold } from 'react-icons/pi';
+import { PiCopyBold, PiGaugeBold, PiSpeakerHighBold } from 'react-icons/pi';
+
 import { MessageMenu } from './MessageMenu';
 
 interface MessageActionsProps {
@@ -67,7 +68,12 @@ export function MessageActions({
           </button>
         </>
       )}
-      <button type="button" aria-label={copied ? 'Copied' : 'Copy'} className={iconBtn} onClick={handleCopy}>
+      <button
+        type="button"
+        aria-label={copied ? 'Copied' : 'Copy'}
+        className={iconBtn}
+        onClick={handleCopy}
+      >
         <PiCopyBold className={`text-base ${copied ? 'text-accent-300' : ''}`} />
       </button>
       <MessageMenu
