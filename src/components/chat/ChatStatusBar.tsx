@@ -3,25 +3,40 @@
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useUserStore } from '@/store/useUserStore';
 
+/** Share of the daily limit at which the meter turns to the warning tone. */
+const WARN_AT = 0.8;
+
 /**
- * Thin usage line under the chat header (design doc 1a) — an accent
- * progress bar showing how much of today's free allowance is spent.
- * Hidden entirely when the visitor is on their own API key.
+ * Hairline "usage today" meter pinned to the composer's bottom edge. Pairs
+ * with the composer's "N left today" label, so it carries no text of its own.
+ * Renders only on the shared key — admin and own-key users have no limit.
+ * The parent must be `relative overflow-hidden` so the rounded corners clip it.
  */
 export function ChatStatusBar() {
   const apiKey = useSettingsStore((s) => s.apiKey);
+  const role = useUserStore((s) => s.role);
   const dailyRequests = useUserStore((s) => s.dailyRequests);
   const dailyRequestLimit = useUserStore((s) => s.dailyRequestLimit);
 
-  if (apiKey !== '' || dailyRequestLimit <= 0) return null;
+  if (role !== 'user' || dailyRequestLimit <= 0 || apiKey !== '') return null;
 
-  const pct = Math.min(100, Math.round((dailyRequests / dailyRequestLimit) * 100));
+  const used = Math.min(dailyRequests, dailyRequestLimit);
+  const ratio = used / dailyRequestLimit;
+  const tone = ratio >= 1 ? 'bg-danger' : ratio >= WARN_AT ? 'bg-warning' : 'bg-accent-500';
 
   return (
-    <div className="mx-4 h-0.5 overflow-hidden rounded-full bg-neutral-900">
+    <div
+      role="progressbar"
+      aria-label="Messages used today"
+      aria-valuemin={0}
+      aria-valuemax={dailyRequestLimit}
+      aria-valuenow={used}
+      aria-valuetext={`${used} of ${dailyRequestLimit} messages used today`}
+      className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-neutral-800/60"
+    >
       <div
-        className="h-full bg-linear-to-r from-transparent to-accent transition-[width] duration-500"
-        style={{ width: `${Math.max(6, 100 - pct)}%` }}
+        className={`h-full transition-[width,background-color] duration-500 ${tone}`}
+        style={{ width: `${ratio * 100}%` }}
       />
     </div>
   );

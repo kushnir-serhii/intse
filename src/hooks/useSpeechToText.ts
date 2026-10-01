@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
 import { langToSpeechCode } from '@/utils/langToSpeechCode';
 
 interface UseSpeechToTextParams {
@@ -67,6 +68,10 @@ function getSpeechRecognitionConstructor(): SpeechRecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
+export function isSpeechRecognitionSupported(): boolean {
+  return getSpeechRecognitionConstructor() !== null;
+}
+
 export function useSpeechToText({
   lang,
   onInterimResult,
@@ -85,9 +90,15 @@ export function useSpeechToText({
   const onFinalRef = useRef(onFinalResult);
   const onErrorRef = useRef(onError);
 
-  useEffect(() => { onInterimRef.current = onInterimResult; }, [onInterimResult]);
-  useEffect(() => { onFinalRef.current = onFinalResult; }, [onFinalResult]);
-  useEffect(() => { onErrorRef.current = onError; }, [onError]);
+  useEffect(() => {
+    onInterimRef.current = onInterimResult;
+  }, [onInterimResult]);
+  useEffect(() => {
+    onFinalRef.current = onFinalResult;
+  }, [onFinalResult]);
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
 
   // Instantiate once
   useEffect(() => {

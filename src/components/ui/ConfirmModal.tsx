@@ -24,20 +24,20 @@ export function ConfirmModal() {
       onClick={closeModal}
     >
       <div
-        className="bg-surface rounded-xl max-w-sm w-full mx-4 p-6"
+        className="bg-surface mx-4 w-full max-w-sm rounded-xl p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold text-white mb-2">{modal.title}</h2>
-        <p className="text-sm text-gray-400 mb-6">{modal.message}</p>
-        <div className="flex gap-3 justify-end">
+        <h2 className="mb-2 text-lg font-semibold text-white">{modal.title}</h2>
+        <p className="mb-6 text-sm text-gray-400">{modal.message}</p>
+        <div className="flex justify-end gap-3">
           <button
-            className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-600 text-gray-300 hover:bg-gray-700 transition-colors"
+            className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700"
             onClick={closeModal}
           >
             Cancel
           </button>
           <button
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${confirmClass}`}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${confirmClass}`}
             onClick={handleConfirm}
           >
             {modal.confirmLabel}

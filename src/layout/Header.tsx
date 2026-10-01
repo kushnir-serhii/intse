@@ -1,9 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+
 import { Logo } from '@/components/ui';
-import { useUserStore } from '@/store/useUserStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
+import { useUserStore } from '@/store/useUserStore';
 
 export const Header: React.FC = () => {
   const router = useRouter();
@@ -35,19 +36,17 @@ export const Header: React.FC = () => {
 
       <div className="ml-auto flex min-w-0 items-center gap-3 font-mono text-xs text-neutral-500 sm:text-sm">
         {apiKey === '' && (
-          <span className="hidden whitespace-nowrap sm:inline">
-            {remainingMessages} left today
-          </span>
+          <span className="hidden whitespace-nowrap sm:inline">{remainingMessages} left today</span>
         )}
         <span className="hidden whitespace-nowrap md:inline">
           {visitorCount} / {dailyCap} visitors
         </span>
         {visitorName && (
-          <span className="max-w-32 truncate font-sans text-accent-400">{visitorName}</span>
+          <span className="text-accent-400 max-w-32 truncate font-sans">{visitorName}</span>
         )}
         <button
           onClick={() => void handleSignOut()}
-          className="whitespace-nowrap font-sans text-neutral-400 transition-colors hover:text-accent-200"
+          className="hover:text-accent-200 font-sans whitespace-nowrap text-neutral-400 transition-colors"
         >
           Log out
         </button>

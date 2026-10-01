@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUserStore } from '@/store/useUserStore';
+import { type FormEvent, useEffect, useState } from 'react';
 import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
+
+import { useUserStore } from '@/store/useUserStore';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function LoginPage() {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await res.json() as { role?: string; error?: string };
+      const data = (await res.json()) as { role?: string; error?: string };
 
       if (res.ok && data.role) {
         useUserStore.getState().setRoleFromApi(data.role);
@@ -67,18 +68,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-bg">
-      <div className="w-full max-w-sm rounded-xl border border-neutral-800 bg-surface p-8">
-
+    <div className="bg-bg fixed inset-0 flex items-center justify-center">
+      <div className="bg-surface w-full max-w-sm rounded-xl border border-neutral-800 p-8">
         {/* Tab switcher */}
         <div className="mb-6 flex rounded-lg border border-neutral-800 p-0.5">
           <button
             type="button"
             onClick={() => switchMode('login')}
             className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-colors ${
-              mode === 'login'
-                ? 'bg-accent text-white'
-                : 'text-neutral-500 hover:text-ink'
+              mode === 'login' ? 'bg-accent text-white' : 'hover:text-ink text-neutral-500'
             }`}
           >
             Sign in
@@ -87,9 +85,7 @@ export default function LoginPage() {
             type="button"
             onClick={() => switchMode('register')}
             className={`flex-1 rounded-md py-1.5 text-sm font-medium transition-colors ${
-              mode === 'register'
-                ? 'bg-accent text-white'
-                : 'text-neutral-500 hover:text-ink'
+              mode === 'register' ? 'bg-accent text-white' : 'hover:text-ink text-neutral-500'
             }`}
           >
             Register
@@ -98,7 +94,7 @@ export default function LoginPage() {
 
         <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-4">
           <div>
-            <label htmlFor="username" className="mb-1.5 block text-sm font-medium text-ink">
+            <label htmlFor="username" className="text-ink mb-1.5 block text-sm font-medium">
               Username
             </label>
             <input
@@ -108,13 +104,14 @@ export default function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full rounded-md border border-neutral-800 bg-bg px-3 py-2 text-sm text-ink placeholder-neutral-500 outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+              className="bg-bg text-ink focus:border-accent focus:ring-accent w-full rounded-md border border-neutral-800 px-3 py-2 text-sm placeholder-neutral-500 outline-none focus:ring-1"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-ink">
-              Password{mode === 'register' && <span className="ml-1 text-neutral-500">(min 8 chars)</span>}
+            <label htmlFor="password" className="text-ink mb-1.5 block text-sm font-medium">
+              Password
+              {mode === 'register' && <span className="ml-1 text-neutral-500">(min 8 chars)</span>}
             </label>
             <div className="relative">
               <input
@@ -125,12 +122,12 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={mode === 'register' ? 8 : undefined}
-                className="w-full rounded-md border border-neutral-800 bg-bg px-3 py-2 pr-10 text-sm text-ink placeholder-neutral-500 outline-none focus:border-accent focus:ring-1 focus:ring-accent"
+                className="bg-bg text-ink focus:border-accent focus:ring-accent w-full rounded-md border border-neutral-800 px-3 py-2 pr-10 text-sm placeholder-neutral-500 outline-none focus:ring-1"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500 hover:text-ink transition-colors"
+                className="hover:text-ink absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500 transition-colors"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <RiEyeOffLine size={16} /> : <RiEyeLine size={16} />}
@@ -143,11 +140,15 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="bg-accent hover:bg-accent/80 mt-2 rounded-md px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
           >
             {loading
-              ? mode === 'login' ? 'Signing in…' : 'Creating account…'
-              : mode === 'login' ? 'Sign in' : 'Create account'}
+              ? mode === 'login'
+                ? 'Signing in…'
+                : 'Creating account…'
+              : mode === 'login'
+                ? 'Sign in'
+                : 'Create account'}
           </button>
         </form>
       </div>

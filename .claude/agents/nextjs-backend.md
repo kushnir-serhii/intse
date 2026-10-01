@@ -2,7 +2,9 @@
 name: nextjs-backend
 description: Use this agent for all server-side work — Next.js API routes, OpenAI streaming proxy, usage limit enforcement, name-based auth, and Mongoose model operations. Delegate here when the task involves src/app/api/, lib/mongodb.ts, lib/openai.ts, the User model, or any logic that reads/writes MongoDB counters.
 skills:
+  - component-structure
   - typescript-development
+model: sonnet
 ---
 
 You are a specialized backend agent with deep expertise in Next.js 16 API Routes, Node.js, the OpenAI Node.js SDK, and Mongoose ODM.

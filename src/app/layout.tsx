@@ -1,5 +1,7 @@
 import './styles/globals.css';
+
 import { Inter, JetBrains_Mono } from 'next/font/google';
+
 import { ThemeHydrator } from '@/components/ui/ThemeHydrator';
 
 const inter = Inter({

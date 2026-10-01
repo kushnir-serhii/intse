@@ -1,0 +1,21 @@
+# Decisions — 015 Learning and App Settings Split
+
+- [spec] Q: Where should learning vs app settings live? → A: User: language to learn on Dashboard; app settings (incl. speech-recognition language "if needed") in Settings.
+- [spec] ASSUMED: Practice language keeps the Dashboard behavior from spec 013 (change saves the conversation and starts a new one, no confirmation).
+- [spec] ASSUMED: One practice-language list everywhere; the microphone-language list matches it.
+- [spec] ASSUMED: Settings shows a one-line note linking to the Dashboard for language, level and instruction.
+- [spec] ASSUMED: Chat Prompt tab link "Edit in settings" becomes "Edit on Dashboard".
+- [spec] TECH-HINT: Reuse the existing Dashboard language selector card; remove the duplicate language section from the Settings page.
+- [spec] Q: Do you need a separate microphone (STT) language in Settings? → A: Yes — default "Same as practice language", user may pick another language for the microphone.
+- [spec] Q: (014) Session panel on chat → A: Removed; its Level control and "Practising" shortcut no longer exist on the chat screen, so Level lives only on the Dashboard.
+- [tech] Q: After changing practice language on the Dashboard, jump to Chat? → A: No — stay on Dashboard; conversation saved + cleared, Chat empty next time it opens (AC 2.1-2 read this way)
+- [tech] Q: Extend speech-code map from 8 to all 24 languages? → A: Keep the 8 for now and inform the user (in-app notes in Settings for unmapped languages)
+- [tech] ASSUMED: Unmapped languages stay selectable in the mic picker with suffix "(listens in English for now)"; notes under mic picker and TTS voice select explain the English fallback
+- [tech] ASSUMED: micLanguage stored as language name, null = same as practice; no persist migration (shallow merge); coordinate with 016's version:1 migrate
+- [tech] ASSUMED: Shared list lives in src/lib/languages.ts; new src/components/settings/ folder for SpeechRecognitionSection; Level → new dashboard/LevelCard.tsx
+- [tech] ASSUMED: No test runner added — type-check + lint + consolidated manual QA (consistent with 014)
+- [tasks] ASSUMED: Feature Testing & Regression slice uses general-purpose (no tester agent installed) and runs the manual QA checklist from the tech spec instead of generating test files, since no test runner exists.
+- [implement] Q: `npm run lint` is broken (Next 16 removed `next lint`; eslint crashes) — how to proceed? → A: Fix lint first, then continue with lint as a real check.
+- [implement] Q: Keep removal of the `ajv ^8.18.0` override (it crashed ESLint)? → A: "Stable libraries and best practices" → removal kept: npm audit lists no ajv advisory, and forcing ajv 8 broke @eslint/eslintrc (needs ajv 6).
+- [implement] Q: What does "lint passes" mean given 4296 existing errors (mostly CRLF)? → A: Changed files only — set Prettier `endOfLine: "auto"`, ignore `.awos-tune/` and `.claude/` in ESLint, and require the files 014/015 touch to be lint-clean; whole-repo cleanup deferred.
+- [implement] Q: No browser automation (Playwright MCP down) — how to handle visual checks in smoke/QA tasks? → A: Defer to user manual QA: smoke tasks pass on type-check + touched-file lint + page serves; visual items listed as NOT RUN and collected into one manual checklist at the end.

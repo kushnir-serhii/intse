@@ -1,25 +1,22 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { PiXBold } from 'react-icons/pi';
-import { ChatThread } from '@/components/chat/ChatThread';
-import { ChatStatusBar } from '@/components/chat/ChatStatusBar';
+import { useCallback, useEffect, useState } from 'react';
+
 import { ChatInput } from '@/components/chat/ChatInput';
-import { SessionPanel } from '@/components/chat/SessionPanel';
+import { ChatThread } from '@/components/chat/ChatThread';
+import { PromptView } from '@/components/chat/PromptView';
 import { SessionHeader, type SessionView } from '@/components/chat/SessionHeader';
 import { TalkPanel } from '@/components/chat/TalkPanel';
-import { PromptView } from '@/components/chat/PromptView';
 import { LimitReachedModal } from '@/components/ui';
-import { useUserStore } from '@/store/useUserStore';
-import { useSettingsStore } from '@/store/useSettingsStore';
-import { useChatStore } from '@/store/useChatStore';
 import { useTTS } from '@/hooks/useTTS';
+import { useChatStore } from '@/store/useChatStore';
 import { useNotificationStore } from '@/store/useNotificationStore';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { useUserStore } from '@/store/useUserStore';
 
 export default function ChatPage() {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showNewConvDialog, setShowNewConvDialog] = useState(false);
-  const [showSessionSheet, setShowSessionSheet] = useState(false);
   const [seedText, setSeedText] = useState<{ value: string } | null>(null);
   const [view, setView] = useState<SessionView>('chat');
 
@@ -27,7 +24,6 @@ export default function ChatPage() {
   const dailyRequestLimit = useUserStore((s) => s.dailyRequestLimit);
   const visitorId = useUserStore((s) => s.visitorId);
   const targetLanguage = useSettingsStore((s) => s.targetLanguage);
-  const selectedVoiceURI = useSettingsStore((s) => s.selectedVoiceURI);
   const ttsEnabled = useSettingsStore((s) => s.ttsEnabled);
   const setTtsEnabled = useSettingsStore((s) => s.setTtsEnabled);
   const ttsSpeed = useSettingsStore((s) => s.ttsSpeed);
@@ -116,11 +112,10 @@ export default function ChatPage() {
     useChatStore.getState().initSessionId();
   }, []);
 
-  // Esc closes any open overlay.
+  // Esc closes the new-conversation dialog.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key !== 'Escape') return;
-      setShowSessionSheet(false);
       setShowNewConvDialog(false);
     }
     window.addEventListener('keydown', onKey);
@@ -128,11 +123,7 @@ export default function ChatPage() {
   }, []);
 
   const role = useUserStore((s) => s.role);
-  const isLimitReached =
-    role === 'user' && dailyRequests > 0 && dailyRequests >= dailyRequestLimit;
-
-  const voiceName =
-    voices.find((v) => v.voiceURI === selectedVoiceURI)?.name ?? 'System default';
+  const isLimitReached = role === 'user' && dailyRequests > 0 && dailyRequests >= dailyRequestLimit;
 
   return (
     <div className="flex h-full max-h-screen">
@@ -149,8 +140,6 @@ export default function ChatPage() {
             if (!next) stop();
           }}
         />
-
-        <ChatStatusBar />
 
         {view === 'prompt' ? (
           <PromptView />
@@ -177,43 +166,9 @@ export default function ChatPage() {
             isSupported={isSupported}
             ttsEnabled={ttsEnabled}
             seedText={seedText}
-            onOpenSettings={() => setShowSessionSheet(true)}
           />
         )}
       </div>
-
-      {/* Right rail on desktop (design doc 1d) */}
-      <aside className="hidden w-[300px] flex-none border-l border-neutral-900 p-5 lg:block">
-        <SessionPanel voiceName={voiceName} ttsSpeed={ttsSpeed} className="h-full" />
-      </aside>
-
-      {/* Session sheet on mobile / tablet */}
-      {showSessionSheet && (
-        <div
-          className="animate-fade-in fixed inset-0 z-50 flex justify-end bg-neutral-900/50 lg:hidden"
-          onClick={() => setShowSessionSheet(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Session settings"
-            className="animate-slide-in-right flex h-full w-[86%] max-w-[340px] flex-col overflow-y-auto border-l border-neutral-800 bg-bg p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-3 flex justify-end">
-              <button
-                type="button"
-                aria-label="Close"
-                onClick={() => setShowSessionSheet(false)}
-                className="grid h-9 w-9 place-items-center rounded-lg text-neutral-400 hover:bg-neutral-900 hover:text-ink"
-              >
-                <PiXBold className="text-lg" />
-              </button>
-            </div>
-            <SessionPanel voiceName={voiceName} ttsSpeed={ttsSpeed} className="flex-1" />
-          </div>
-        </div>
-      )}
 
       <LimitReachedModal isOpen={showLimitModal} onClose={() => setShowLimitModal(false)} />
       {showNewConvDialog && (
@@ -222,7 +177,7 @@ export default function ChatPage() {
           onClick={() => setShowNewConvDialog(false)}
         >
           <div
-            className="mx-4 w-full max-w-sm rounded-[14px] border border-neutral-700 bg-surface p-6 shadow-[0_16px_40px_rgba(0,0,0,0.65)]"
+            className="bg-surface mx-4 w-full max-w-sm rounded-[14px] border border-neutral-700 p-6 shadow-[0_16px_40px_rgba(0,0,0,0.65)]"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="mb-6 text-sm leading-relaxed text-neutral-400">
@@ -232,21 +187,21 @@ export default function ChatPage() {
               <button
                 type="button"
                 onClick={() => setShowNewConvDialog(false)}
-                className="rounded-lg border border-neutral-800 px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-neutral-900"
+                className="text-ink rounded-lg border border-neutral-800 px-4 py-2 text-sm font-medium transition-colors hover:bg-neutral-900"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleDiscard}
-                className="rounded-lg border border-neutral-800 px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-neutral-900"
+                className="text-ink rounded-lg border border-neutral-800 px-4 py-2 text-sm font-medium transition-colors hover:bg-neutral-900"
               >
                 Discard
               </button>
               <button
                 type="button"
                 onClick={handleSave}
-                className="rounded-lg border border-accent bg-accent/10 px-4 py-2 text-sm font-medium text-accent-200 transition-colors hover:bg-accent/18"
+                className="border-accent bg-accent/10 text-accent-200 hover:bg-accent/18 rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
               >
                 Save
               </button>

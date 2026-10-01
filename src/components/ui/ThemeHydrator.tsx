@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+
 import { useSettingsStore } from '@/store/useSettingsStore';
 
 export function ThemeHydrator() {

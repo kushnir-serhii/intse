@@ -49,102 +49,101 @@ interface ChatState {
 export const useChatStore = create<ChatState>()(
   persist(
     (set) => ({
-  messages: [],
-  isStreaming: false,
-  sessionTokens: 0,
-  autoDialogActive: false,
-  speakingMessageId: null,
-  sessionId: null,
-  sessionSaved: false,
-  startedAt: null,
-  cleanStreak: 0,
-
-  addMessage: (role, content, streaming = false) => {
-    const id = crypto.randomUUID();
-    const message: Message = {
-      id,
-      role,
-      content,
-      isStreaming: streaming,
-      timestamp: Date.now(),
-    };
-    set((state) => ({
-      messages: [...state.messages, message],
-      startedAt: state.startedAt ?? Date.now(),
-    }));
-    return id;
-  },
-
-  setStreaming: (value) => set({ isStreaming: value }),
-
-  clearMessages: () =>
-    set({
       messages: [],
+      isStreaming: false,
+      sessionTokens: 0,
+      autoDialogActive: false,
+      speakingMessageId: null,
       sessionId: null,
       sessionSaved: false,
       startedAt: null,
       cleanStreak: 0,
-    }),
 
-  setSessionSaved: (value) => set({ sessionSaved: value }),
+      addMessage: (role, content, streaming = false) => {
+        const id = crypto.randomUUID();
+        const message: Message = {
+          id,
+          role,
+          content,
+          isStreaming: streaming,
+          timestamp: Date.now(),
+        };
+        set((state) => ({
+          messages: [...state.messages, message],
+          startedAt: state.startedAt ?? Date.now(),
+        }));
+        return id;
+      },
 
-  initSessionId: () =>
-    set((state) => ({
-      sessionId: state.sessionId ?? crypto.randomUUID(),
-    })),
+      setStreaming: (value) => set({ isStreaming: value }),
 
-  appendChunk: (id, chunk) =>
-    set((state) => ({
-      messages: state.messages.map((msg) =>
-        msg.id === id ? { ...msg, content: msg.content + chunk } : msg,
-      ),
-    })),
+      clearMessages: () =>
+        set({
+          messages: [],
+          sessionId: null,
+          sessionSaved: false,
+          startedAt: null,
+          cleanStreak: 0,
+        }),
 
-  setCorrection: (id, correction, note) =>
-    set((state) => ({
-      cleanStreak: 0,
-      messages: state.messages.map((msg) =>
-        msg.id === id
-          ? {
-              ...msg,
-              correction: correction ?? undefined,
-              correctionNote: correction ? (note ?? undefined) : undefined,
-            }
-          : msg,
-      ),
-    })),
+      setSessionSaved: (value) => set({ sessionSaved: value }),
 
-  registerCleanTurn: () => set((state) => ({ cleanStreak: state.cleanStreak + 1 })),
+      initSessionId: () =>
+        set((state) => ({
+          sessionId: state.sessionId ?? crypto.randomUUID(),
+        })),
 
-  finalizeMessage: (id) =>
-    set((state) => ({
-      isStreaming: false,
-      messages: state.messages.map((msg) =>
-        msg.id === id ? { ...msg, isStreaming: false } : msg,
-      ),
-    })),
+      appendChunk: (id, chunk) =>
+        set((state) => ({
+          messages: state.messages.map((msg) =>
+            msg.id === id ? { ...msg, content: msg.content + chunk } : msg,
+          ),
+        })),
 
-  addSessionTokens: (n) =>
-    set((state) => ({ sessionTokens: state.sessionTokens + n })),
+      setCorrection: (id, correction, note) =>
+        set((state) => ({
+          cleanStreak: 0,
+          messages: state.messages.map((msg) =>
+            msg.id === id
+              ? {
+                  ...msg,
+                  correction: correction ?? undefined,
+                  correctionNote: correction ? (note ?? undefined) : undefined,
+                }
+              : msg,
+          ),
+        })),
 
-  setAutoDialogActive: (v) => set({ autoDialogActive: v }),
+      registerCleanTurn: () => set((state) => ({ cleanStreak: state.cleanStreak + 1 })),
 
-  setSpeakingMessageId: (id) => set({ speakingMessageId: id }),
+      finalizeMessage: (id) =>
+        set((state) => ({
+          isStreaming: false,
+          messages: state.messages.map((msg) =>
+            msg.id === id ? { ...msg, isStreaming: false } : msg,
+          ),
+        })),
 
-  deleteMessage: (id) =>
-    set((state) => ({
-      messages: state.messages.filter((msg) => msg.id !== id),
-      speakingMessageId: state.speakingMessageId === id ? null : state.speakingMessageId,
-    })),
+      addSessionTokens: (n) => set((state) => ({ sessionTokens: state.sessionTokens + n })),
 
-  loadSession: (messages, sessionId) =>
-    set({
-      messages,
-      sessionId,
-      sessionSaved: false,
-      startedAt: messages[0]?.timestamp ?? null,
-      cleanStreak: 0,
-    }),
+      setAutoDialogActive: (v) => set({ autoDialogActive: v }),
+
+      setSpeakingMessageId: (id) => set({ speakingMessageId: id }),
+
+      deleteMessage: (id) =>
+        set((state) => ({
+          messages: state.messages.filter((msg) => msg.id !== id),
+          speakingMessageId: state.speakingMessageId === id ? null : state.speakingMessageId,
+        })),
+
+      loadSession: (messages, sessionId) =>
+        set({
+          messages,
+          sessionId,
+          sessionSaved: false,
+          startedAt: messages[0]?.timestamp ?? null,
+          cleanStreak: 0,
+        }),
     }),
     {
       name: 'intse-chat',

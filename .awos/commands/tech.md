@@ -29,6 +29,9 @@ Your primary task is to create the technical specification for a given feature. 
 # INTERACTION
 
 - Use the `AskUserQuestion` tool for multiple-choice questions instead of plain text or numbered lists.
+- **A skipped or unanswered question is never a stop signal. Record your best-fit option as an explicit `**Assumption:**` in the draft and continue through the remaining steps, including writing the deliverable.**
+
+<!-- Editor note (not an instruction): this rule is necessary but not sufficient. In `claude -p` a dismissed AskUserQuestion ends the turn, so a deliverable Write placed after such a question never runs unattended. The fix is structural — keep the Write ahead of any dismissable question, then refine afterward. -->
 
 ---
 
@@ -44,11 +47,7 @@ Follow this process precisely.
 ### Step 2: Gather and Synthesize Context
 
 1.  Read the `functional-spec.md` from the chosen directory and the main `context/product/architecture.md`. These two inputs are independent — issue both `Read` calls in a single tool-use block (parallel tool calls). Sequence reads only when one's output feeds the next.
-2.  Identify candidate specialist subagents: determine which technology stack(s) this feature primarily involves (e.g., Python backend, React frontend, or both). Discover registered specialists from two sources, both routed through the built-in `Explore` agent so the orchestrator context stays lean:
-    - **Project-local agents** — scan `.claude/agents/*.md` and parse each agent's YAML frontmatter (`name`, `description`, `skills`).
-    - **Plugin-provided agents** — read the `Agent` tool's description block to enumerate agents whose `subagent_type` carries a `plugin-name:` prefix (e.g. `python-development:python-pro`, `backend-development:backend-architect`).
-
-    Match each stack against the combined list, plus always-available built-ins (`general-purpose`, `Explore`, `Plan`).
+2.  Identify candidate specialist subagents: determine which technology stack(s) this feature primarily involves (e.g., Python backend, React frontend, or both). Enumerate the universe of registered specialists by inspecting the `Agent` tool's description block in your own system prompt. This is an introspection step — no tool call is required, but it is mandatory. Both kinds of agents are listed there: project-local ones (declared as files under `.claude/agents/*.md`) and plugin-provided ones. Tell them apart by the `plugin-name:` prefix on `subagent_type` — plugin-provided agents carry it (e.g. `python-development:python-pro`, `backend-development:backend-architect`); project-local agents do not. Match each stack against this list, plus always-available built-ins (`general-purpose`, `Explore`, `Plan`).
 
 3.  Analyze the codebase: delegate the read-only exploration to the built-in `Explore` agent to keep the orchestrator context lean. If the feature spans multiple stacks, run one exploration per stack in parallel.
 4.  For each stack the feature touches, invoke its matched specialist (project-local or plugin-provided, from step 2) via the `Agent` tool. Pass the functional spec, the relevant architecture sections, and the exploration findings as context. Specialists carry skill attachments in their frontmatter, so running them is what makes those skills load — drafting tech-stack sections in the orchestrator bypasses both the specialist and its skills. Run independent specialist calls in parallel.
@@ -83,14 +82,13 @@ Follow this process precisely.
     - Proactively identify potential issues and propose solutions.
     - Example: "A key risk here is handling large or malicious file uploads. I will add a 'Risk & Mitigation' note to include server-side validation of file type and size, and to process uploads asynchronously. Is there anything else we should be concerned about?"
 
-### Step 4: Final Review
+### Step 4: Write the Deliverable
 
-- Once you have collaboratively filled all sections of the template, present the complete draft to the user for a final review. Ask, "Here is the complete draft of the technical considerations. Please let me know if any changes are needed."
+Write the completed draft to the `technical-considerations.md` file inside the directory identified in Step 1. Write the file whether or not every question was answered — drafting a tech spec is reversible (re-run `/awos:tech` to revise), so the deliverable is never gated behind a confirmation an unattended run cannot answer.
 
-### Step 5: File Generation
+### Step 5: Surface for Review and Recommend Next Step
 
-1.  **Identify Path:** The output path is the `technical-considerations.md` file inside the directory you identified in Step 1.
-2.  **Save File:** Once the user approves the draft, write the final content into this file.
-3.  Review the saved spec for new technologies, frameworks, tools, or testing approaches not already covered by the project's existing architecture and specialist agents.
-    - If new capabilities are needed: report the saved path and recommend a pre-filled hire command: `/awos:hire cover [directory-name]: need [comma-separated list of new technologies/capabilities]`, followed by `/awos:tasks`.
-    - Otherwise: report the saved path and the next command: `/awos:tasks`.
+1.  Report the saved path. Surface any choices that were recorded as assumptions (rather than confirmed by the user) so they are easy to spot and challenge. If the user requests changes, apply them and re-save; otherwise they can revise later by re-running `/awos:tech` against the same spec.
+2.  Review the saved spec for new technologies, frameworks, tools, or testing approaches not already covered by the project's existing architecture and specialist agents.
+    - If new capabilities are needed: recommend a pre-filled hire command: `/awos:hire cover [directory-name]: need [comma-separated list of new technologies/capabilities]`, followed by `/awos:tasks`.
+    - Otherwise: report the next command: `/awos:tasks`.

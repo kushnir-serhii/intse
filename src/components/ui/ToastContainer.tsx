@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
+
 import { useNotificationStore } from '@/store/useNotificationStore';
+
 import { Toast } from './Toast';
 
 export function ToastContainer() {
@@ -20,7 +22,7 @@ export function ToastContainer() {
   return (
     <div
       aria-label="Notifications"
-      className="fixed bottom-4 z-50 flex flex-col-reverse gap-2 left-0 right-0 px-4 xs:left-1/2 xs:right-auto xs:px-0 xs:-translate-x-1/2 xs:w-auto"
+      className="xs:left-1/2 xs:right-auto xs:px-0 xs:-translate-x-1/2 xs:w-auto fixed right-0 bottom-4 left-0 z-50 flex flex-col-reverse gap-2 px-4"
     >
       {toasts.map((toast) => (
         <Toast

@@ -1,11 +1,11 @@
-import mongoose, { Model, Schema } from 'mongoose'
+import mongoose, { Model, Schema } from 'mongoose';
 
 export interface IVisitor {
-  visitorId: string
-  enrolledAt: Date
-  dailyRequests: number
-  dailyTokens: number
-  lastResetAt: Date
+  visitorId: string;
+  enrolledAt: Date;
+  dailyRequests: number;
+  dailyTokens: number;
+  lastResetAt: Date;
 }
 
 const VisitorSchema = new Schema<IVisitor>(
@@ -39,12 +39,12 @@ const VisitorSchema = new Schema<IVisitor>(
   },
   {
     collection: 'visitors',
-  }
-)
+  },
+);
 
-VisitorSchema.index({ enrolledAt: 1 })
+VisitorSchema.index({ enrolledAt: 1 });
 
 const Visitor: Model<IVisitor> =
-  mongoose.models.Visitor ?? mongoose.model<IVisitor>('Visitor', VisitorSchema)
+  mongoose.models.Visitor ?? mongoose.model<IVisitor>('Visitor', VisitorSchema);
 
-export default Visitor
+export default Visitor;

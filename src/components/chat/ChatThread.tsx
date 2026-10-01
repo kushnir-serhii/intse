@@ -1,8 +1,10 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+
 import { useChatStore } from '@/store/useChatStore';
 import { useSettingsStore } from '@/store/useSettingsStore';
+
 import { EmptyState } from './EmptyState';
 import { MessageBubble } from './MessageBubble';
 import { StreakChip } from './StreakChip';
@@ -34,7 +36,9 @@ export function ChatThread({
   const deleteMessage = useChatStore((state) => state.deleteMessage);
   const speakingMessageId = useChatStore((s) => s.speakingMessageId);
   const cleanStreak = useChatStore((s) => s.cleanStreak);
-  const lastAssistantId = [...messages].reverse().find((m) => m.role === 'assistant' && m.content)?.id;
+  const lastAssistantId = [...messages]
+    .reverse()
+    .find((m) => m.role === 'assistant' && m.content)?.id;
   const ttsEnabled = useSettingsStore((state) => state.ttsEnabled);
   const selectedVoiceURI = useSettingsStore((state) => state.selectedVoiceURI);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -78,9 +82,7 @@ export function ChatThread({
           );
         })
       )}
-      {messages.length > 0 && cleanStreak >= STREAK_THRESHOLD && (
-        <StreakChip count={cleanStreak} />
-      )}
+      {messages.length > 0 && cleanStreak >= STREAK_THRESHOLD && <StreakChip count={cleanStreak} />}
       <div ref={bottomRef} />
     </div>
   );

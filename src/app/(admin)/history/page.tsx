@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUserStore } from '@/store/useUserStore';
+import { useCallback, useEffect, useState } from 'react';
+
 import { useChatStore } from '@/store/useChatStore';
+import { useUserStore } from '@/store/useUserStore';
 
 interface SessionMeta {
   sessionId: string;
@@ -25,9 +26,11 @@ type ConfirmDialog = {
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) +
+  return (
+    d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) +
     ' · ' +
-    d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+  );
 }
 
 export default function HistoryPage() {
@@ -53,98 +56,117 @@ export default function HistoryPage() {
       .finally(() => setLoading(false));
   }, [visitorId]);
 
-  const toggleSession = useCallback(async (sessionId: string) => {
-    if (expandedId === sessionId) {
-      setExpandedId(null);
-      setExpandedMessages([]);
-      return;
-    }
-    setLoadingSession(true);
-    setExpandedId(sessionId);
-    try {
-      const res = await fetch(`/api/history/${sessionId}?visitorId=${visitorId}`);
-      const data = await res.json() as { session?: { messages: SessionMessage[] } };
-      setExpandedMessages(data.session?.messages ?? []);
-    } catch {
-      setExpandedMessages([]);
-    } finally {
-      setLoadingSession(false);
-    }
-  }, [expandedId, visitorId]);
-
-  const deleteSession = useCallback(async (e: React.MouseEvent, sessionId: string) => {
-    e.stopPropagation();
-    setDeletingId(sessionId);
-    try {
-      await fetch(`/api/history/${sessionId}?visitorId=${visitorId}`, { method: 'DELETE' });
-      setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
+  const toggleSession = useCallback(
+    async (sessionId: string) => {
       if (expandedId === sessionId) {
         setExpandedId(null);
         setExpandedMessages([]);
+        return;
       }
-    } catch {
-      // fail silently
-    } finally {
-      setDeletingId(null);
-    }
-  }, [visitorId, expandedId]);
+      setLoadingSession(true);
+      setExpandedId(sessionId);
+      try {
+        const res = await fetch(`/api/history/${sessionId}?visitorId=${visitorId}`);
+        const data = (await res.json()) as { session?: { messages: SessionMessage[] } };
+        setExpandedMessages(data.session?.messages ?? []);
+      } catch {
+        setExpandedMessages([]);
+      } finally {
+        setLoadingSession(false);
+      }
+    },
+    [expandedId, visitorId],
+  );
 
-  const doLoadSession = useCallback(async (targetSessionId: string) => {
-    setContinuingIds((prev) => new Set(prev).add(targetSessionId));
-    try {
-      const res = await fetch(`/api/history/${targetSessionId}?visitorId=${visitorId}`);
-      const data = await res.json() as { session?: { messages: SessionMessage[] } };
-      const rawMessages = data.session?.messages ?? [];
-      const messages = rawMessages.map((m) => ({
-        id: crypto.randomUUID(),
-        role: m.role,
-        content: m.content,
-        timestamp: m.timestamp,
-        isStreaming: false,
+  const deleteSession = useCallback(
+    async (e: React.MouseEvent, sessionId: string) => {
+      e.stopPropagation();
+      setDeletingId(sessionId);
+      try {
+        await fetch(`/api/history/${sessionId}?visitorId=${visitorId}`, { method: 'DELETE' });
+        setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
+        if (expandedId === sessionId) {
+          setExpandedId(null);
+          setExpandedMessages([]);
+        }
+      } catch {
+        // fail silently
+      } finally {
+        setDeletingId(null);
+      }
+    },
+    [visitorId, expandedId],
+  );
+
+  const doLoadSession = useCallback(
+    async (targetSessionId: string) => {
+      setContinuingIds((prev) => new Set(prev).add(targetSessionId));
+      try {
+        const res = await fetch(`/api/history/${targetSessionId}?visitorId=${visitorId}`);
+        const data = (await res.json()) as { session?: { messages: SessionMessage[] } };
+        const rawMessages = data.session?.messages ?? [];
+        const messages = rawMessages.map((m) => ({
+          id: crypto.randomUUID(),
+          role: m.role,
+          content: m.content,
+          timestamp: m.timestamp,
+          isStreaming: false,
+        }));
+        useChatStore.getState().loadSession(messages, targetSessionId);
+        router.push('/');
+      } catch {
+        // fail silently
+      } finally {
+        setContinuingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(targetSessionId);
+          return next;
+        });
+      }
+    },
+    [visitorId, router],
+  );
+
+  const saveCurrentAndLoad = useCallback(
+    async (targetSessionId: string) => {
+      const state = useChatStore.getState();
+      const currentSessionId = state.sessionId;
+      const messagesToSave = state.messages.map(({ role, content, timestamp }) => ({
+        role,
+        content,
+        timestamp,
       }));
-      useChatStore.getState().loadSession(messages, targetSessionId);
-      router.push('/');
-    } catch {
-      // fail silently
-    } finally {
-      setContinuingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(targetSessionId);
-        return next;
-      });
-    }
-  }, [visitorId, router]);
+      try {
+        await fetch('/api/history', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: currentSessionId,
+            visitorId,
+            messages: messagesToSave,
+          }),
+        });
+      } catch {
+        // proceed even if save fails
+      }
+      await doLoadSession(targetSessionId);
+    },
+    [visitorId, doLoadSession],
+  );
 
-  const saveCurrentAndLoad = useCallback(async (targetSessionId: string) => {
-    const state = useChatStore.getState();
-    const currentSessionId = state.sessionId;
-    const messagesToSave = state.messages.map(({ role, content, timestamp }) => ({
-      role,
-      content,
-      timestamp,
-    }));
-    try {
-      await fetch('/api/history', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: currentSessionId, visitorId, messages: messagesToSave }),
-      });
-    } catch {
-      // proceed even if save fails
-    }
-    await doLoadSession(targetSessionId);
-  }, [visitorId, doLoadSession]);
-
-  const handleContinue = useCallback((e: React.MouseEvent, sessionId: string) => {
-    e.stopPropagation();
-    const state = useChatStore.getState();
-    const hasUnsaved = state.messages.length > 0 && !state.sessionSaved;
-    if (hasUnsaved) {
-      setConfirmDialog({ targetSessionId: sessionId });
-    } else {
-      void doLoadSession(sessionId);
-    }
-  }, [doLoadSession]);
+  const handleContinue = useCallback(
+    (e: React.MouseEvent, sessionId: string) => {
+      e.stopPropagation();
+      const state = useChatStore.getState();
+      const hasUnsaved = state.messages.length > 0 && !state.sessionSaved;
+      if (hasUnsaved) {
+        setConfirmDialog({ targetSessionId: sessionId });
+      } else {
+        void doLoadSession(sessionId);
+      }
+    },
+    [doLoadSession],
+  );
 
   const handleDialogSave = useCallback(async () => {
     if (!confirmDialog) return;
@@ -180,29 +202,27 @@ export default function HistoryPage() {
   }, [visitorId]);
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto bg-bg px-4 py-8 sm:px-8">
+    <div className="bg-bg flex flex-1 flex-col overflow-y-auto px-4 py-8 sm:px-8">
       <div className="mb-8 flex items-center justify-between gap-4">
-        <h1 className="font-[--font-inter] text-2xl font-bold text-ink">
-          History
-        </h1>
+        <h1 className="text-ink font-[--font-inter] text-2xl font-bold">History</h1>
         {sessions.length > 0 && (
           <button
             onClick={() => setClearAllDialog(true)}
-            className="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-500/10 transition-colors"
+            className="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/10"
           >
             Clear all history
           </button>
         )}
       </div>
 
-      {loading && (
-        <p className="text-sm text-neutral-500">Loading…</p>
-      )}
+      {loading && <p className="text-sm text-neutral-500">Loading…</p>}
 
       {!loading && sessions.length === 0 && (
         <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-          <p className="text-neutral-500 text-sm">No conversations yet.</p>
-          <p className="text-neutral-500 text-xs">Start a chat and your sessions will appear here.</p>
+          <p className="text-sm text-neutral-500">No conversations yet.</p>
+          <p className="text-xs text-neutral-500">
+            Start a chat and your sessions will appear here.
+          </p>
         </div>
       )}
 
@@ -216,22 +236,21 @@ export default function HistoryPage() {
                 {/* Session card */}
                 <div
                   onClick={() => void toggleSession(session.sessionId)}
-                  className="cursor-pointer rounded-lg border border-neutral-800 bg-surface p-4 transition-colors hover:border-accent/50"
+                  className="bg-surface hover:border-accent/50 cursor-pointer rounded-lg border border-neutral-800 p-4 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm text-ink">
-                        {session.preview || '(empty)'}
-                      </p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-ink truncate text-sm">{session.preview || '(empty)'}</p>
                       <p className="mt-1 text-xs text-neutral-500">
-                        {formatDate(session.updatedAt)} · {session.messageCount} message{session.messageCount !== 1 ? 's' : ''}
+                        {formatDate(session.updatedAt)} · {session.messageCount} message
+                        {session.messageCount !== 1 ? 's' : ''}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex shrink-0 items-center gap-2">
                       <button
                         onClick={(e) => handleContinue(e, session.sessionId)}
                         disabled={isContinuing}
-                        className="rounded px-2 py-1 text-xs font-medium text-accent border border-accent/40 hover:bg-accent/10 transition-colors disabled:opacity-40"
+                        className="text-accent border-accent/40 hover:bg-accent/10 rounded border px-2 py-1 text-xs font-medium transition-colors disabled:opacity-40"
                         aria-label="Continue this conversation"
                       >
                         {isContinuing ? 'Loading…' : 'Continue'}
@@ -239,10 +258,19 @@ export default function HistoryPage() {
                       <button
                         onClick={(e) => void deleteSession(e, session.sessionId)}
                         disabled={deletingId === session.sessionId}
-                        className="rounded p-1 text-neutral-500 hover:text-red-400 transition-colors disabled:opacity-40"
+                        className="rounded p-1 text-neutral-500 transition-colors hover:text-red-400 disabled:opacity-40"
                         aria-label="Delete session"
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <polyline points="3 6 5 6 21 6" />
                           <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
                           <path d="M10 11v6M14 11v6" />
@@ -268,7 +296,7 @@ export default function HistoryPage() {
 
                 {/* Expanded messages */}
                 {isExpanded && (
-                  <div className="mt-1 rounded-lg border border-neutral-800 bg-bg p-4">
+                  <div className="bg-bg mt-1 rounded-lg border border-neutral-800 p-4">
                     {loadingSession ? (
                       <p className="text-xs text-neutral-500">Loading messages…</p>
                     ) : expandedMessages.length === 0 ? (
@@ -278,10 +306,10 @@ export default function HistoryPage() {
                         {expandedMessages.map((msg, i) => (
                           <div
                             key={i}
-                            className={`max-w-[80%] rounded-xl px-3 py-2 text-sm text-ink whitespace-pre-wrap ${
+                            className={`text-ink max-w-[80%] rounded-xl px-3 py-2 text-sm whitespace-pre-wrap ${
                               msg.role === 'user'
-                                ? 'ml-auto bg-accent rounded-br-sm'
-                                : 'mr-auto bg-surface border border-neutral-800 rounded-bl-sm'
+                                ? 'bg-accent ml-auto rounded-br-sm'
+                                : 'bg-surface mr-auto rounded-bl-sm border border-neutral-800'
                             }`}
                           >
                             {msg.content}
@@ -300,22 +328,23 @@ export default function HistoryPage() {
       {/* Clear all history dialog */}
       {clearAllDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 px-4">
-          <div className="w-full max-w-sm rounded-xl border border-neutral-800 bg-surface p-6 shadow-2xl">
-            <p className="mb-4 text-sm text-ink">
-              Delete all {sessions.length} conversation{sessions.length !== 1 ? 's' : ''}? This cannot be undone.
+          <div className="bg-surface w-full max-w-sm rounded-xl border border-neutral-800 p-6 shadow-2xl">
+            <p className="text-ink mb-4 text-sm">
+              Delete all {sessions.length} conversation{sessions.length !== 1 ? 's' : ''}? This
+              cannot be undone.
             </p>
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => void deleteAllSessions()}
                 disabled={clearingAll}
-                className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500 transition-colors disabled:opacity-40"
+                className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:opacity-40"
               >
                 {clearingAll ? 'Deleting…' : 'Delete all'}
               </button>
               <button
                 onClick={() => setClearAllDialog(false)}
                 disabled={clearingAll}
-                className="w-full rounded-lg px-4 py-2 text-sm text-neutral-500 hover:text-ink transition-colors disabled:opacity-40"
+                className="hover:text-ink w-full rounded-lg px-4 py-2 text-sm text-neutral-500 transition-colors disabled:opacity-40"
               >
                 Cancel
               </button>
@@ -327,26 +356,26 @@ export default function HistoryPage() {
       {/* Save/Discard/Cancel dialog */}
       {confirmDialog !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/50 px-4">
-          <div className="w-full max-w-sm rounded-xl border border-neutral-800 bg-surface p-6 shadow-2xl">
-            <p className="mb-4 text-sm text-ink">
+          <div className="bg-surface w-full max-w-sm rounded-xl border border-neutral-800 p-6 shadow-2xl">
+            <p className="text-ink mb-4 text-sm">
               You have an unsaved conversation. Save it before opening this one?
             </p>
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => void handleDialogSave()}
-                className="w-full rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-600 transition-colors"
+                className="bg-accent hover:bg-accent-600 w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
               >
                 Save
               </button>
               <button
                 onClick={() => void handleDialogDiscard()}
-                className="w-full rounded-lg border border-neutral-800 px-4 py-2 text-sm font-medium text-ink hover:bg-neutral-900 transition-colors"
+                className="text-ink w-full rounded-lg border border-neutral-800 px-4 py-2 text-sm font-medium transition-colors hover:bg-neutral-900"
               >
                 Discard
               </button>
               <button
                 onClick={handleDialogCancel}
-                className="w-full rounded-lg px-4 py-2 text-sm text-neutral-500 hover:text-ink transition-colors"
+                className="hover:text-ink w-full rounded-lg px-4 py-2 text-sm text-neutral-500 transition-colors"
               >
                 Cancel
               </button>

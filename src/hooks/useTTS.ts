@@ -1,9 +1,10 @@
 'use client';
 
-import { useRef, useState, useEffect, useCallback } from 'react';
-import { langToSpeechCode } from '@/utils/langToSpeechCode';
-import { useSettingsStore } from '@/store/useSettingsStore';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
 import { useChatStore } from '@/store/useChatStore';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { langToSpeechCode } from '@/utils/langToSpeechCode';
 
 interface UseTTSParams {
   targetLanguage: string;
@@ -19,8 +20,7 @@ interface UseTTSReturn {
 
 export function useTTS({ targetLanguage }: UseTTSParams): UseTTSReturn {
   const isSupported =
-    typeof window !== 'undefined' &&
-    typeof window.speechSynthesis !== 'undefined';
+    typeof window !== 'undefined' && typeof window.speechSynthesis !== 'undefined';
 
   const allVoicesRef = useRef<SpeechSynthesisVoice[]>([]);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
@@ -61,9 +61,7 @@ export function useTTS({ targetLanguage }: UseTTSParams): UseTTSReturn {
   const _resolveVoice = useCallback((): SpeechSynthesisVoice | null => {
     const selectedVoiceURI = useSettingsStore.getState().selectedVoiceURI;
     const prefix = langToSpeechCode(targetLanguage).slice(0, 2);
-    const filteredVoices = allVoicesRef.current.filter((v) =>
-      v.lang.startsWith(prefix),
-    );
+    const filteredVoices = allVoicesRef.current.filter((v) => v.lang.startsWith(prefix));
 
     if (selectedVoiceURI !== null) {
       const match = filteredVoices.find((v) => v.voiceURI === selectedVoiceURI);
@@ -76,48 +74,54 @@ export function useTTS({ targetLanguage }: UseTTSParams): UseTTSReturn {
   }, [targetLanguage]);
 
   // Drain the queue: pick the next item and speak it
-  const _drain = useCallback((): void => {
-    if (isPlaying.current) return;
-    if (queue.current.length === 0) return;
+  const _drain = useCallback(
+    function drain(): void {
+      if (isPlaying.current) return;
+      if (queue.current.length === 0) return;
 
-    const item = queue.current.shift()!;
-    isPlaying.current = true;
-    useChatStore.getState().setSpeakingMessageId(item.id);
+      const item = queue.current.shift()!;
+      isPlaying.current = true;
+      useChatStore.getState().setSpeakingMessageId(item.id);
 
-    const resolvedVoice = _resolveVoice();
-    const utterance = new SpeechSynthesisUtterance(item.text);
-    if (resolvedVoice !== null) {
-      utterance.voice = resolvedVoice;
-    }
-    utterance.rate = useSettingsStore.getState().ttsSpeed;
-
-    utterance.onend = () => {
-      isPlaying.current = false;
-      useChatStore.getState().setSpeakingMessageId(null);
-      _drain();
-    };
-
-    utterance.onerror = (e) => {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('TTS error:', e.error);
+      const resolvedVoice = _resolveVoice();
+      const utterance = new SpeechSynthesisUtterance(item.text);
+      if (resolvedVoice !== null) {
+        utterance.voice = resolvedVoice;
       }
-      isPlaying.current = false;
-      useChatStore.getState().setSpeakingMessageId(null);
+      utterance.rate = useSettingsStore.getState().ttsSpeed;
+
+      utterance.onend = () => {
+        isPlaying.current = false;
+        useChatStore.getState().setSpeakingMessageId(null);
+        drain();
+      };
+
+      utterance.onerror = (e) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('TTS error:', e.error);
+        }
+        isPlaying.current = false;
+        useChatStore.getState().setSpeakingMessageId(null);
+        drain();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    },
+    [_resolveVoice],
+  );
+
+  const speak = useCallback(
+    (id: string, text: string): void => {
+      if (!isSupported) return;
+      // Duplicate guard — skip if already queued
+      const alreadyQueued = queue.current.some((item) => item.id === id);
+      if (alreadyQueued) return;
+
+      queue.current.push({ id, text });
       _drain();
-    };
-
-    window.speechSynthesis.speak(utterance);
-  }, [_resolveVoice]);
-
-  const speak = useCallback((id: string, text: string): void => {
-    if (!isSupported) return;
-    // Duplicate guard — skip if already queued
-    const alreadyQueued = queue.current.some((item) => item.id === id);
-    if (alreadyQueued) return;
-
-    queue.current.push({ id, text });
-    _drain();
-  }, [isSupported, _drain]);
+    },
+    [isSupported, _drain],
+  );
 
   const stop = useCallback((): void => {
     if (!isSupported) return;
@@ -127,12 +131,15 @@ export function useTTS({ targetLanguage }: UseTTSParams): UseTTSReturn {
     useChatStore.getState().setSpeakingMessageId(null);
   }, [isSupported]);
 
-  const repeat = useCallback((id: string, text: string): void => {
-    if (!isSupported) return;
-    stop();
-    queue.current.push({ id, text });
-    _drain();
-  }, [isSupported, stop, _drain]);
+  const repeat = useCallback(
+    (id: string, text: string): void => {
+      if (!isSupported) return;
+      stop();
+      queue.current.push({ id, text });
+      _drain();
+    },
+    [isSupported, stop, _drain],
+  );
 
   if (!isSupported) {
     return { isSupported: false, voices: [], speak, stop, repeat };

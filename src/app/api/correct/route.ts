@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import OpenAI from 'openai';
+
 import { getOpenAIClient } from '@/lib/openai';
 
 const BYO_KEY_PATTERN = /^sk-[A-Za-z0-9\-_]{20,}$/;
@@ -55,7 +56,9 @@ export async function POST(request: NextRequest): Promise<Response> {
     const raw = completion.choices[0]?.message?.content ?? '{}';
     const parsed = JSON.parse(raw) as { correction?: unknown; explanation?: unknown };
     const correction =
-      typeof parsed.correction === 'string' && parsed.correction.trim() && parsed.correction.trim() !== text.trim()
+      typeof parsed.correction === 'string' &&
+      parsed.correction.trim() &&
+      parsed.correction.trim() !== text.trim()
         ? parsed.correction.trim()
         : null;
     const explanation =

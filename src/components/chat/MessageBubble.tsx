@@ -1,9 +1,10 @@
 'use client';
 
-import type { Message } from '@/store/useChatStore';
 import { IntseMark } from '@/components/ui';
-import { MessageActions } from './MessageActions';
+import type { Message } from '@/store/useChatStore';
+
 import { CorrectionCard } from './CorrectionCard';
+import { MessageActions } from './MessageActions';
 
 interface MessageBubbleProps {
   message: Message;
