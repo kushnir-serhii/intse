@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type UserRole = 'user' | 'admin' | null;
+export type UserRole = 'user' | 'owner' | null;
 
 interface UserState {
   visitorId: string | null;
@@ -52,7 +52,7 @@ export const useUserStore = create<UserState>()(
       },
       setRole: (role: UserRole) => set({ role }),
       setRoleFromApi: (rawRole: string) => {
-        const mapped: UserRole = rawRole === 'owner' || rawRole === 'admin' ? 'admin' : 'user';
+        const mapped: UserRole = rawRole === 'owner' ? 'owner' : 'user';
         set({ role: mapped });
       },
       setVisitorId: (id: string) => set({ visitorId: id }),

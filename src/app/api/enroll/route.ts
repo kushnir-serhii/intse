@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import Visitor from '@/lib/db/models/Visitor';
+import User from '@/lib/db/models/User';
 import { connectDB } from '@/lib/mongodb';
 
 export async function POST(): Promise<NextResponse> {
@@ -16,7 +16,7 @@ export async function POST(): Promise<NextResponse> {
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
     );
 
-    const count = await Visitor.countDocuments({ enrolledAt: { $gte: startOfToday } });
+    const count = await User.countDocuments({ role: 'user', enrolledAt: { $gte: startOfToday } });
 
     if (count >= cap) {
       return NextResponse.json({ enrolled: false, count, cap }, { status: 200 });
@@ -24,7 +24,7 @@ export async function POST(): Promise<NextResponse> {
 
     const visitorId = crypto.randomUUID();
 
-    await Visitor.create({
+    await User.create({
       visitorId,
       enrolledAt: now,
       dailyRequests: 0,
@@ -32,7 +32,10 @@ export async function POST(): Promise<NextResponse> {
       lastResetAt: now,
     });
 
-    const newCount = await Visitor.countDocuments({ enrolledAt: { $gte: startOfToday } });
+    const newCount = await User.countDocuments({
+      role: 'user',
+      enrolledAt: { $gte: startOfToday },
+    });
 
     return NextResponse.json({ enrolled: true, visitorId, count: newCount, cap }, { status: 200 });
   } catch (error: unknown) {

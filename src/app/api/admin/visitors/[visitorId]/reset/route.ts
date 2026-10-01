@@ -1,14 +1,14 @@
 import type { NextRequest } from 'next/server';
 
-import { verifySession } from '@/lib/auth/verifySession';
-import Visitor from '@/lib/db/models/Visitor';
+import { verifyOwnerSession } from '@/lib/auth/verifySession';
+import User from '@/lib/db/models/User';
 import { connectDB } from '@/lib/mongodb';
 
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ visitorId: string }> },
 ): Promise<Response> {
-  const session = await verifySession(request);
+  const session = await verifyOwnerSession(request);
 
   if (!session) {
     return Response.json({ error: 'unauthorized' }, { status: 401 });
@@ -19,7 +19,7 @@ export async function POST(
 
     const { visitorId } = await context.params;
 
-    const result = await Visitor.findOneAndUpdate(
+    const result = await User.findOneAndUpdate(
       { visitorId },
       { $set: { dailyRequests: 0, dailyTokens: 0, lastResetAt: new Date() } },
       { new: true },

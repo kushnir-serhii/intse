@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server';
 
-import Admin from '@/lib/db/models/Admin';
+import User from '@/lib/db/models/User';
 import { connectDB } from '@/lib/mongodb';
 
 export async function POST(request: NextRequest): Promise<Response> {
@@ -36,13 +36,18 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   await connectDB();
 
-  const existing = await Admin.countDocuments();
+  const existing = await User.countDocuments({ role: 'owner' });
   if (existing > 0) {
     return Response.json({ error: 'already_seeded' }, { status: 409 });
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  await Admin.create({ username: username.trim(), passwordHash, role: 'admin' });
+  await User.create({
+    visitorId: username.trim(),
+    username: username.trim(),
+    passwordHash,
+    role: 'owner',
+  });
 
-  return Response.json({ ok: true, username: username.trim(), role: 'admin' });
+  return Response.json({ ok: true, username: username.trim(), role: 'owner' });
 }

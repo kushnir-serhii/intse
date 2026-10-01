@@ -1,11 +1,11 @@
 import { NextRequest } from 'next/server';
 
-import { verifySession } from '@/lib/auth/verifySession';
-import Visitor from '@/lib/db/models/Visitor';
+import { verifyOwnerSession } from '@/lib/auth/verifySession';
+import User from '@/lib/db/models/User';
 import { connectDB } from '@/lib/mongodb';
 
 export async function GET(request: NextRequest): Promise<Response> {
-  const session = await verifySession(request);
+  const session = await verifyOwnerSession(request);
 
   if (!session) {
     return Response.json({ error: 'unauthorized' }, { status: 401 });
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest): Promise<Response> {
   todayUTC.setUTCHours(0, 0, 0, 0);
 
   const [aggregate, topVisitors] = await Promise.all([
-    Visitor.aggregate([
+    User.aggregate([
       {
         $facet: {
           total: [{ $count: 'count' }],
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest): Promise<Response> {
         },
       },
     ]),
-    Visitor.find(
+    User.find(
       { lastResetAt: { $gte: todayUTC }, dailyRequests: { $gt: 0 } },
       { visitorId: 1, dailyRequests: 1, dailyTokens: 1, _id: 0 },
     )
