@@ -1,13 +1,14 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { PiCopyBold, PiGaugeBold, PiSpeakerHighBold } from 'react-icons/pi';
+import { PiGaugeBold, PiSpeakerHighBold } from 'react-icons/pi';
 
 import { MessageMenu } from './MessageMenu';
 
 interface MessageActionsProps {
   content: string;
   role: 'user' | 'assistant';
+  /** Send time (ms) — shown as HH:MM, full date on hover. */
+  timestamp: number;
   onDelete: () => void;
   ttsEnabled: boolean;
   onRepeat: () => void;
@@ -16,21 +17,19 @@ interface MessageActionsProps {
   voices: SpeechSynthesisVoice[];
   selectedVoiceURI: string | null;
   onVoiceChange: (uri: string) => void;
-  /** Right-align the row (used under user bubbles). */
-  align?: 'start' | 'end';
 }
 
 const iconBtn =
-  'grid h-8 w-8 place-items-center rounded-lg text-neutral-500 transition-colors hover:bg-neutral-900 hover:text-accent-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent';
+  'grid h-7 w-7 place-items-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-900 hover:text-accent-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent';
 
 /**
- * Inline message actions shown beneath the bubble (design doc 1a) —
- * play / slower / copy, plus an overflow menu (speed, voice, delete)
- * that reuses {@link MessageMenu}.
+ * Footer inside the bubble — play / slower on the left for replies, send
+ * time and the overflow menu (copy, speed, voice, delete) on the right.
  */
 export function MessageActions({
   content,
   role,
+  timestamp,
   onDelete,
   ttsEnabled,
   onRepeat,
@@ -39,17 +38,8 @@ export function MessageActions({
   voices,
   selectedVoiceURI,
   onVoiceChange,
-  align = 'start',
 }: MessageActionsProps) {
-  const [copied, setCopied] = useState(false);
-  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function handleCopy() {
-    navigator.clipboard.writeText(content).catch(() => {});
-    setCopied(true);
-    if (copyTimer.current) clearTimeout(copyTimer.current);
-    copyTimer.current = setTimeout(() => setCopied(false), 1500);
-  }
+  const sentAt = new Date(timestamp);
 
   function handleSlower() {
     onSpeedChange(Math.max(0.5, Number((ttsSpeed - 0.25).toFixed(2))));
@@ -57,30 +47,31 @@ export function MessageActions({
   }
 
   return (
-    <div className={`flex items-center gap-1 ${align === 'end' ? 'justify-end' : ''}`}>
+    <div className="-mr-2 -mb-1.5 flex items-center gap-0.5">
       {role === 'assistant' && (
-        <>
+        <div className="-ml-1.5 flex items-center gap-0.5">
           <button type="button" aria-label="Play" className={iconBtn} onClick={onRepeat}>
-            <PiSpeakerHighBold className="text-base" />
+            <PiSpeakerHighBold className="text-[15px]" />
           </button>
           <button type="button" aria-label="Slower" className={iconBtn} onClick={handleSlower}>
-            <PiGaugeBold className="text-base" />
+            <PiGaugeBold className="text-[15px]" />
           </button>
-        </>
+        </div>
       )}
-      <button
-        type="button"
-        aria-label={copied ? 'Copied' : 'Copy'}
-        className={iconBtn}
-        onClick={handleCopy}
+      <time
+        dateTime={sentAt.toISOString()}
+        title={sentAt.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+        className={`ml-auto pl-3 text-[11px] tabular-nums ${
+          role === 'user' ? 'text-accent-300' : 'text-neutral-500'
+        }`}
       >
-        <PiCopyBold className={`text-base ${copied ? 'text-accent-300' : ''}`} />
-      </button>
+        {sentAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      </time>
       <MessageMenu
         content={content}
         onDelete={onDelete}
         role={role}
-        side={align === 'end' ? 'left' : 'right'}
+        side="left"
         ttsEnabled={ttsEnabled}
         onRepeat={onRepeat}
         ttsSpeed={ttsSpeed}

@@ -24,6 +24,17 @@
     @apply bg-bg-main relative z-1 min-h-screen font-[--font-inter] dark:bg-[#0f111c];
   }
 
+  /* Browser autofill (Google Password Manager etc.) paints a light-blue fill that
+     can't be overridden with background-color — mask it with an inset shadow. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--color-ink);
+    -webkit-box-shadow: 0 0 0 1000px var(--autofill-bg, var(--color-bg)) inset;
+    caret-color: var(--color-ink);
+    transition: background-color 9999s ease-out 0s;
+  }
+
 }
 
 @layer utilities {

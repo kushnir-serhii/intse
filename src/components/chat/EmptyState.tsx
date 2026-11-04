@@ -1,6 +1,8 @@
 'use client';
 
-import { IntseMark } from '@/components/ui';
+import { IntseMark, Tooltip } from '@/components/ui';
+
+import { CHIP_TOOLTIPS } from './tooltipCopy';
 
 const PROMPTS = ['Ask me a question', 'Say it slower', 'Explain that'];
 
@@ -31,14 +33,15 @@ export function EmptyState({ onPrompt }: EmptyStateProps) {
       </div>
       <div className="flex flex-wrap justify-center gap-2">
         {PROMPTS.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onPrompt?.(p)}
-            className="hover:border-accent-700 hover:text-accent-200 rounded-full border border-neutral-800 px-3 py-1.5 text-[13px] text-neutral-300 transition-colors"
-          >
-            {p}
-          </button>
+          <Tooltip key={p} content={CHIP_TOOLTIPS[p]} side="top">
+            <button
+              type="button"
+              onClick={() => onPrompt?.(p)}
+              className="hover:border-accent-700 hover:text-accent-200 rounded-full border border-neutral-800 px-3 py-1.5 text-[13px] text-neutral-300 transition-colors"
+            >
+              {p}
+            </button>
+          </Tooltip>
         ))}
       </div>
     </div>

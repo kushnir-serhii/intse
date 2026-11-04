@@ -3,8 +3,11 @@
 import { useEffect, useState } from 'react';
 import { PiSpeakerHighBold, PiSpeakerSlashBold } from 'react-icons/pi';
 
+import { Tooltip } from '@/components/ui';
 import { useChatStore } from '@/store/useChatStore';
 import { selectIsCustomInUse, useSettingsStore } from '@/store/useSettingsStore';
+
+import { TOOLTIP_COPY, VIEW_TOOLTIPS } from './tooltipCopy';
 
 export type SessionView = 'chat' | 'talk' | 'prompt';
 
@@ -67,63 +70,89 @@ export function SessionHeader({
   return (
     <div className="mx-auto flex w-full max-w-[680px] flex-none flex-col gap-3 px-4 pt-1 pb-3">
       <div className="flex items-center gap-3">
-        <div className="relative grid h-11 w-11 flex-none place-items-center">
-          <svg viewBox="0 0 36 36" className="absolute inset-0 h-full w-full -rotate-90">
-            <circle
-              cx="18"
-              cy="18"
-              r="16"
-              fill="none"
-              stroke="var(--color-neutral-900)"
-              strokeWidth="2.5"
-            />
-            <circle
-              cx="18"
-              cy="18"
-              r="16"
-              fill="none"
-              stroke="var(--color-accent)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeDasharray={RING_CIRCUMFERENCE}
-              strokeDashoffset={dashOffset}
-              className="transition-[stroke-dashoffset] duration-500"
-            />
-          </svg>
-          <span className="text-accent-200 text-xs tabular-nums">{elapsedMin}&prime;</span>
-        </div>
+        <Tooltip content={TOOLTIP_COPY.timer} focusable className="flex-none">
+          <div className="relative grid h-11 w-11 flex-none place-items-center">
+            <svg viewBox="0 0 36 36" className="absolute inset-0 h-full w-full -rotate-90">
+              <circle
+                cx="18"
+                cy="18"
+                r="16"
+                fill="none"
+                stroke="var(--color-neutral-900)"
+                strokeWidth="2.5"
+              />
+              <circle
+                cx="18"
+                cy="18"
+                r="16"
+                fill="none"
+                stroke="var(--color-accent)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray={RING_CIRCUMFERENCE}
+                strokeDashoffset={dashOffset}
+                className="transition-[stroke-dashoffset] duration-500"
+              />
+            </svg>
+            <span className="text-accent-200 text-xs tabular-nums">{elapsedMin}&prime;</span>
+          </div>
+        </Tooltip>
 
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="font-heading text-ink text-[17px] font-medium">{title}</span>
-          <span className="truncate text-xs text-neutral-500">
-            {targetLanguage} · {level} · {userTurns} {userTurns === 1 ? 'turn' : 'turns'}
+          <Tooltip
+            content={isCustomInUse ? TOOLTIP_COPY.titleCustom : TOOLTIP_COPY.titleFree}
+            focusable
+            className="self-start"
+          >
+            <span className="font-heading text-ink text-[17px] font-medium">{title}</span>
+          </Tooltip>
+          <span className="flex items-center gap-1 text-xs text-neutral-500">
+            <Tooltip content={TOOLTIP_COPY.language} focusable>
+              <span>{targetLanguage}</span>
+            </Tooltip>
+            ·
+            <Tooltip content={TOOLTIP_COPY.level} focusable>
+              <span>{level}</span>
+            </Tooltip>
+            ·
+            <Tooltip content={TOOLTIP_COPY.turns} focusable>
+              <span>
+                {userTurns} {userTurns === 1 ? 'turn' : 'turns'}
+              </span>
+            </Tooltip>
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={onToggleTts}
-          aria-label={ttsEnabled ? 'Mute replies' : 'Read replies aloud'}
-          aria-pressed={ttsEnabled}
-          className={`grid h-9 w-9 place-items-center rounded-lg transition-colors ${
-            ttsEnabled ? 'text-accent-200' : 'hover:text-ink text-neutral-500 hover:bg-neutral-900'
-          }`}
-        >
-          {ttsEnabled ? (
-            <PiSpeakerHighBold className="text-lg" />
-          ) : (
-            <PiSpeakerSlashBold className="text-lg" />
-          )}
-        </button>
+        <Tooltip content={ttsEnabled ? TOOLTIP_COPY.ttsOn : TOOLTIP_COPY.ttsOff}>
+          <button
+            type="button"
+            onClick={onToggleTts}
+            aria-label={ttsEnabled ? 'Mute replies' : 'Read replies aloud'}
+            aria-pressed={ttsEnabled}
+            className={`grid h-9 w-9 place-items-center rounded-lg transition-colors ${
+              ttsEnabled
+                ? 'text-accent-200'
+                : 'hover:text-ink text-neutral-500 hover:bg-neutral-900'
+            }`}
+          >
+            {ttsEnabled ? (
+              <PiSpeakerHighBold className="text-lg" />
+            ) : (
+              <PiSpeakerSlashBold className="text-lg" />
+            )}
+          </button>
+        </Tooltip>
 
-        <button
-          type="button"
-          disabled={!hasSession}
-          onClick={onEnd}
-          className="hover:border-accent-700 hover:text-accent-200 h-9 rounded-lg border border-neutral-800 px-3 text-[13px] text-neutral-300 transition-colors disabled:opacity-40"
-        >
-          End
-        </button>
+        <Tooltip content={TOOLTIP_COPY.end}>
+          <button
+            type="button"
+            disabled={!hasSession}
+            onClick={onEnd}
+            className="hover:border-accent-700 hover:text-accent-200 h-9 rounded-lg border border-neutral-800 px-3 text-[13px] text-neutral-300 transition-colors disabled:opacity-40"
+          >
+            End
+          </button>
+        </Tooltip>
       </div>
 
       <div
@@ -134,20 +163,21 @@ export function SessionHeader({
         {VIEWS.map((v) => {
           const active = view === v.id;
           return (
-            <button
-              key={v.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => onViewChange(v.id)}
-              className={`grid h-[34px] place-items-center rounded-lg text-[13px] transition-colors ${
-                active
-                  ? 'border-accent-800 bg-surface text-accent-100 border'
-                  : 'hover:text-ink text-neutral-400'
-              }`}
-            >
-              {v.label}
-            </button>
+            <Tooltip key={v.id} content={VIEW_TOOLTIPS[v.id]} className="block">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => onViewChange(v.id)}
+                className={`grid h-[34px] place-items-center rounded-lg text-[13px] transition-colors ${
+                  active
+                    ? 'border-accent-800 bg-surface text-accent-100 border'
+                    : 'hover:text-ink text-neutral-400'
+                }`}
+              >
+                {v.label}
+              </button>
+            </Tooltip>
           );
         })}
       </div>

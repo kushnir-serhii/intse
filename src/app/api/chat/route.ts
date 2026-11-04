@@ -137,7 +137,7 @@ export async function POST(request: NextRequest): Promise<Response> {
             lastResetAt: new Date(),
           },
         },
-        { upsert: true, new: true },
+        { upsert: true, returnDocument: 'after' },
       );
 
       const freshVisitor = await resetIfNeeded(visitor);

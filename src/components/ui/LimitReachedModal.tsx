@@ -60,6 +60,11 @@ export function LimitReachedModal({ isOpen, onClose }: LimitReachedModalProps) {
           <div className="flex flex-col gap-3">
             <input
               type="password"
+              name="api-key"
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
+              data-bwignore
               value={keyValue}
               onChange={(e) => setKeyValue(e.target.value)}
               placeholder="sk-…"

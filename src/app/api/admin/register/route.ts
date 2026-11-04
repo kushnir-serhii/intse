@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
 
+import { isEmail, MIN_PASSWORD_LENGTH } from '@/lib/auth/passwordReset';
 import User from '@/lib/db/models/User';
 import { connectDB } from '@/lib/mongodb';
 
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     typeof username !== 'string' ||
     !username.trim() ||
     typeof password !== 'string' ||
-    password.length < 8
+    password.length < MIN_PASSWORD_LENGTH
   ) {
     return Response.json(
       { error: 'username and password (min 8 chars) are required' },
@@ -29,20 +30,26 @@ export async function POST(request: NextRequest): Promise<Response> {
     );
   }
 
+  // The username is the email the owner sends password-reset links to
+  const email = username.trim().toLowerCase();
+  if (!isEmail(email)) {
+    return Response.json({ error: 'invalid_email' }, { status: 400 });
+  }
+
   try {
     await connectDB();
 
     const existing = await User.findOne({
-      $or: [{ username: username.trim() }, { visitorId: username.trim() }],
-    });
+      $or: [{ username: email }, { visitorId: email }],
+    }).collation({ locale: 'en', strength: 2 }); // case-insensitive: catches older mixed-case accounts
     if (existing) {
       return Response.json({ error: 'username_taken' }, { status: 409 });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({
-      visitorId: username.trim(),
-      username: username.trim(),
+      visitorId: email,
+      username: email,
       passwordHash,
       role: 'user',
     });

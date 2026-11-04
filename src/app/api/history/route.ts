@@ -57,7 +57,7 @@ export async function POST(request: NextRequest): Promise<Response> {
   await ChatSession.findOneAndUpdate(
     { sessionId },
     { $set: { visitorId, messages } },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: 'after' },
   );
 
   return Response.json({ ok: true });

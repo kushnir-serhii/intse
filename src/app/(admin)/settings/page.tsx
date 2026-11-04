@@ -59,6 +59,11 @@ export default function SettingsPage() {
 
         <input
           type="password"
+          name="api-key"
+          autoComplete="off"
+          data-1p-ignore
+          data-lpignore="true"
+          data-bwignore
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           placeholder="sk-..."

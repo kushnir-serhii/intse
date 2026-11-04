@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
+import { type ResetLink, ResetLinkModal } from '@/components/admin';
 import { useNotification } from '@/hooks/useNotification';
 import { useUserStore } from '@/store/useUserStore';
 
@@ -17,6 +18,8 @@ interface StatsData {
 
 interface Visitor {
   visitorId: string;
+  /** Present only for accounts (email + password); anonymous visitors have none */
+  username?: string;
   enrolledAt: string;
   dailyRequests: number;
   dailyTokens: number;
@@ -58,6 +61,8 @@ export default function AdminPanelPage() {
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [visitorsLoading, setVisitorsLoading] = useState(true);
   const [resetting, setResetting] = useState<Set<string>>(new Set());
+  const [issuingLink, setIssuingLink] = useState<string | null>(null);
+  const [resetLink, setResetLink] = useState<ResetLink | null>(null);
 
   useEffect(() => {
     if (role !== null && role !== 'owner') {
@@ -129,6 +134,27 @@ export default function AdminPanelPage() {
           next.delete(visitorId);
           return next;
         });
+      }
+    },
+    [toast],
+  );
+
+  const handleIssueResetLink = useCallback(
+    async (visitorId: string): Promise<void> => {
+      setIssuingLink(visitorId);
+      try {
+        const r = await fetch(`/api/admin/visitors/${encodeURIComponent(visitorId)}/reset-link`, {
+          method: 'POST',
+        });
+        if (!r.ok) {
+          toast('error', 'Could not create a reset link.');
+          return;
+        }
+        setResetLink((await r.json()) as ResetLink);
+      } catch {
+        toast('error', 'Could not create a reset link.');
+      } finally {
+        setIssuingLink(null);
       }
     },
     [toast],
@@ -231,7 +257,7 @@ export default function AdminPanelPage() {
                 {visitors.map((visitor) => (
                   <tr key={visitor.visitorId} className="border-b border-neutral-800 last:border-0">
                     <td className="text-ink py-3 pr-4 font-mono text-xs">
-                      …{visitor.visitorId.slice(-8)}
+                      {visitor.username ?? `…${visitor.visitorId.slice(-8)}`}
                     </td>
                     <td className="py-3 pr-4 text-neutral-500">
                       {new Date(visitor.enrolledAt).toLocaleDateString()}
@@ -241,7 +267,7 @@ export default function AdminPanelPage() {
                     <td className="py-3 pr-4 text-neutral-500">
                       {new Date(visitor.lastResetAt).toLocaleDateString()}
                     </td>
-                    <td className="py-3">
+                    <td className="flex gap-2 py-3">
                       <button
                         type="button"
                         disabled={resetting.has(visitor.visitorId)}
@@ -252,6 +278,18 @@ export default function AdminPanelPage() {
                       >
                         {resetting.has(visitor.visitorId) ? 'Resetting…' : 'Reset'}
                       </button>
+                      {visitor.username && (
+                        <button
+                          type="button"
+                          disabled={issuingLink === visitor.visitorId}
+                          onClick={() => {
+                            void handleIssueResetLink(visitor.visitorId);
+                          }}
+                          className="hover:border-accent hover:text-accent focus:ring-offset-surface focus:ring-accent rounded-md border border-neutral-800 px-3 py-1 text-xs font-medium whitespace-nowrap text-neutral-500 transition-colors focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:opacity-40"
+                        >
+                          {issuingLink === visitor.visitorId ? 'Creating…' : 'Password link'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -260,6 +298,8 @@ export default function AdminPanelPage() {
           </div>
         )}
       </section>
+
+      <ResetLinkModal link={resetLink} onClose={() => setResetLink(null)} />
     </div>
   );
 }

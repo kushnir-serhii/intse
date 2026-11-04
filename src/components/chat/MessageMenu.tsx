@@ -101,9 +101,9 @@ export function MessageMenu({
         aria-label="Message options"
         aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
-        className="hover:text-accent-300 focus-visible:ring-accent grid h-8 w-8 place-items-center rounded-lg text-neutral-500 transition-colors duration-150 hover:bg-neutral-900 focus:outline-none focus-visible:ring-1"
+        className="hover:text-accent-300 focus-visible:ring-accent grid h-7 w-7 place-items-center rounded-md text-neutral-500 transition-colors duration-150 hover:bg-neutral-900 focus:outline-none focus-visible:ring-1"
       >
-        <BsThreeDotsVertical className="h-4 w-4" />
+        <BsThreeDotsVertical className="h-3.5 w-3.5" />
       </button>
 
       {/* Dropdown panel */}

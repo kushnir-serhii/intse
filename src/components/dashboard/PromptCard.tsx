@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { PiLockSimpleBold, PiPencilSimpleBold } from 'react-icons/pi';
 
 import {
   buildLanguageFooter,
@@ -38,8 +39,8 @@ const NOTE_TEXT: Record<InstructionNote, string> = {
 };
 
 const LEGEND = [
-  { id: 'locked', label: 'Locked', swatch: 'bg-neutral-700' },
-  { id: 'yours', label: 'Yours', swatch: 'bg-accent' },
+  { id: 'locked', label: 'Locked', Icon: PiLockSimpleBold, iconClass: 'text-neutral-400' },
+  { id: 'yours', label: 'Yours', Icon: PiPencilSimpleBold, iconClass: 'text-accent-200' },
 ] as const;
 
 export default function PromptCard() {
@@ -141,12 +142,14 @@ export default function PromptCard() {
             System prompt · {targetLanguage} · {level}
           </span>
           <span className="flex gap-3.5 text-xs text-neutral-500">
-            {LEGEND.map((item) => (
-              <span key={item.id} className="flex items-center gap-1.5">
-                <span aria-hidden className={`size-2 rounded-xs ${item.swatch}`} />
-                {item.label}
-              </span>
-            ))}
+            {LEGEND.filter((item) => item.id !== 'yours' || viewMode !== 'default').map(
+              ({ id, label, Icon, iconClass }) => (
+                <span key={id} className="flex items-center gap-1.5">
+                  <Icon aria-hidden className={`text-xs ${iconClass}`} />
+                  {label}
+                </span>
+              ),
+            )}
           </span>
         </div>
 
