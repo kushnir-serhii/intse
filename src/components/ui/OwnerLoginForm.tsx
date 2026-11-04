@@ -3,6 +3,8 @@
 import { type FormEvent, useState } from 'react';
 import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
 
+import { storeCredential } from '@/lib/auth/storeCredential';
+
 interface OwnerLoginFormProps {
   onSuccess: (username: string, role: string) => void;
   onBack: () => void;
@@ -26,13 +28,15 @@ export default function OwnerLoginForm({ onSuccess, onBack }: OwnerLoginFormProp
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
-      const data = (await res.json()) as { role?: string; error?: string };
+      const data = (await res.json()) as { role?: string; error?: string; minutesLeft?: number };
 
       if (!res.ok || !data.role) {
         setError(
           data.error === 'invalid_credentials'
             ? 'Invalid username or password.'
-            : 'Something went wrong. Please try again.',
+            : data.error === 'too_many_attempts'
+              ? `Too many failed attempts. Try again in ${data.minutesLeft ?? 15} min.`
+              : 'Something went wrong. Please try again.',
         );
         return;
       }
@@ -44,6 +48,7 @@ export default function OwnerLoginForm({ onSuccess, onBack }: OwnerLoginFormProp
         return;
       }
 
+      await storeCredential(username.trim(), password);
       onSuccess(username.trim(), data.role);
     } catch {
       setError('Something went wrong. Please try again.');
@@ -54,31 +59,40 @@ export default function OwnerLoginForm({ onSuccess, onBack }: OwnerLoginFormProp
 
   return (
     <form
+      method="post"
+      action="/api/admin/login"
       onSubmit={(e) => void handleSubmit(e)}
       className="flex w-full max-w-[400px] flex-col items-center gap-4"
     >
       <h1 className="text-ink text-2xl font-[var(--font-inter)] font-bold">Owner sign in</h1>
 
       <input
+        id="owner-username"
+        name="username"
         type="text"
         autoComplete="username"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
         value={username}
         onChange={(e) => setUsername(e.target.value)}
         placeholder="Login"
         required
         autoFocus
-        className="bg-surface text-ink focus:border-accent focus:ring-accent w-full rounded-md border border-neutral-800 px-4 py-3 placeholder-neutral-500 outline-none focus:ring-1"
+        className="bg-surface text-ink focus:border-accent focus:ring-accent w-full rounded-md border border-neutral-800 px-4 py-3 placeholder-neutral-500 outline-none [--autofill-bg:var(--color-surface)] focus:ring-1"
       />
 
       <div className="relative w-full">
         <input
+          id="owner-password"
+          name="password"
           type={showPassword ? 'text' : 'password'}
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
           required
-          className="bg-surface text-ink focus:border-accent focus:ring-accent w-full rounded-md border border-neutral-800 px-4 py-3 pr-11 placeholder-neutral-500 outline-none focus:ring-1"
+          className="bg-surface text-ink focus:border-accent focus:ring-accent w-full rounded-md border border-neutral-800 px-4 py-3 pr-11 placeholder-neutral-500 outline-none [--autofill-bg:var(--color-surface)] focus:ring-1"
         />
         <button
           type="button"

@@ -45,8 +45,21 @@ export function MessageBubble({
   if (isUser) {
     return (
       <div className="flex flex-col items-end gap-2">
-        <div className="animate-message-in border-accent-700 bg-accent-900 text-accent-100 max-w-[78%] rounded-[14px_14px_4px_14px] border px-3.5 py-2.5 text-[15px] leading-relaxed wrap-break-word whitespace-pre-wrap">
-          {message.content}
+        <div className="animate-message-in border-accent-700 bg-accent-900 text-accent-100 flex max-w-[78%] flex-col gap-1 rounded-[14px_14px_4px_14px] border px-3.5 py-2.5 text-[15px] leading-relaxed">
+          <span className="wrap-break-word whitespace-pre-wrap">{message.content}</span>
+          <MessageActions
+            content={message.content}
+            role="user"
+            timestamp={message.timestamp}
+            onDelete={onDelete}
+            ttsEnabled={ttsEnabled}
+            onRepeat={onRepeat}
+            ttsSpeed={ttsSpeed}
+            onSpeedChange={onSpeedChange}
+            voices={voices}
+            selectedVoiceURI={selectedVoiceURI}
+            onVoiceChange={onVoiceChange}
+          />
         </div>
         {message.correction ? (
           <CorrectionCard
@@ -57,19 +70,6 @@ export function MessageBubble({
             onSayItBack={onSayItBack}
           />
         ) : null}
-        <MessageActions
-          content={message.content}
-          role="user"
-          align="end"
-          onDelete={onDelete}
-          ttsEnabled={ttsEnabled}
-          onRepeat={onRepeat}
-          ttsSpeed={ttsSpeed}
-          onSpeedChange={onSpeedChange}
-          voices={voices}
-          selectedVoiceURI={selectedVoiceURI}
-          onVoiceChange={onVoiceChange}
-        />
       </div>
     );
   }
@@ -83,18 +83,17 @@ export function MessageBubble({
       >
         <IntseMark size={26} state={isSpeaking ? 'listening' : pleased ? 'pleased' : 'idle'} />
       </span>
-      <div className="flex max-w-[300px] flex-col gap-2">
-        <div
-          className={`bg-surface text-ink rounded-[14px_14px_14px_4px] border px-3.5 py-2.5 text-[15px] leading-relaxed wrap-break-word whitespace-pre-wrap transition-colors ${
-            isSpeaking ? 'border-accent' : 'border-neutral-800'
-          }`}
-        >
-          {message.content}
-        </div>
+      <div
+        className={`bg-surface text-ink flex max-w-[300px] flex-col gap-1 rounded-[14px_14px_14px_4px] border px-3.5 py-2.5 text-[15px] leading-relaxed transition-colors ${
+          isSpeaking ? 'border-accent' : 'border-neutral-800'
+        }`}
+      >
+        <span className="wrap-break-word whitespace-pre-wrap">{message.content}</span>
         {!message.isStreaming && message.content ? (
           <MessageActions
             content={message.content}
             role="assistant"
+            timestamp={message.timestamp}
             onDelete={onDelete}
             ttsEnabled={ttsEnabled}
             onRepeat={onRepeat}

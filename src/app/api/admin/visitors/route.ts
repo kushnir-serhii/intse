@@ -35,7 +35,15 @@ export async function GET(request: NextRequest): Promise<Response> {
     const [visitors, total] = await Promise.all([
       User.find(
         {},
-        { _id: 0, visitorId: 1, enrolledAt: 1, dailyRequests: 1, dailyTokens: 1, lastResetAt: 1 },
+        {
+          _id: 0,
+          visitorId: 1,
+          username: 1,
+          enrolledAt: 1,
+          dailyRequests: 1,
+          dailyTokens: 1,
+          lastResetAt: 1,
+        },
       )
         .sort({ enrolledAt: -1 })
         .skip((pageNum - 1) * limitNum)

@@ -83,6 +83,8 @@ export function useSpeechToText({
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const [isListening, setIsListening] = useState(false);
+  // True from start() until onend — the browser throws if start() is called in between.
+  const activeRef = useRef(false);
 
   // Keep callbacks in refs so recognition handlers are always fresh
   // without needing to reinstantiate the recognition object.
@@ -115,8 +117,8 @@ export function useSpeechToText({
         if (result === undefined) continue;
         const transcript = result[0]?.transcript ?? '';
         if (result.isFinal) {
+          // isListening flips in onend — the session is still active here.
           onFinalRef.current(transcript);
-          setIsListening(false);
         } else {
           onInterimRef.current(transcript);
         }
@@ -124,18 +126,19 @@ export function useSpeechToText({
     };
 
     recognition.onend = () => {
+      activeRef.current = false;
       setIsListening(false);
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       onErrorRef.current(event.error);
-      setIsListening(false);
     };
 
     recognitionRef.current = recognition;
 
     return () => {
       recognition.abort();
+      activeRef.current = false;
       recognitionRef.current = null;
     };
     // Intentionally omitting `lang` — lang changes are handled by the effect below.
@@ -150,8 +153,14 @@ export function useSpeechToText({
   }, [lang]);
 
   const startListening = useCallback(() => {
-    if (!recognitionRef.current) return;
-    recognitionRef.current.start();
+    if (!recognitionRef.current || activeRef.current) return;
+    try {
+      recognitionRef.current.start();
+    } catch {
+      // InvalidStateError — a session is already running.
+      return;
+    }
+    activeRef.current = true;
     setIsListening(true);
   }, []);
 

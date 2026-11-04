@@ -58,11 +58,13 @@ export default function NamePrompt({ onDone }: NamePromptProps) {
 
           <input
             type="text"
+            name="name"
+            autoComplete="given-name"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Your name"
-            className="bg-surface text-ink focus:border-accent focus:ring-accent w-full rounded-md border border-neutral-800 px-4 py-3 placeholder-neutral-500 outline-none focus:ring-1"
+            className="bg-surface text-ink focus:border-accent focus:ring-accent w-full rounded-md border border-neutral-800 px-4 py-3 placeholder-neutral-500 outline-none [--autofill-bg:var(--color-surface)] focus:ring-1"
             autoFocus
           />
 

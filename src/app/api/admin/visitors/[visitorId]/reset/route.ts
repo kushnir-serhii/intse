@@ -22,7 +22,7 @@ export async function POST(
     const result = await User.findOneAndUpdate(
       { visitorId },
       { $set: { dailyRequests: 0, dailyTokens: 0, lastResetAt: new Date() } },
-      { new: true },
+      { returnDocument: 'after' },
     ).lean();
 
     if (result === null) {

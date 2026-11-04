@@ -13,7 +13,7 @@ export async function resetIfNeeded(doc: UserDoc): Promise<IUser> {
     const updated = await User.findOneAndUpdate(
       { visitorId: doc.visitorId, lastResetAt: { $lt: todayStart } },
       { $set: { dailyRequests: 0, dailyTokens: 0, lastResetAt: todayStart } },
-      { new: true },
+      { returnDocument: 'after' },
     );
 
     if (updated) {

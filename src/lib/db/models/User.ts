@@ -16,6 +16,12 @@ export interface IUser {
   dailyRequests: number;
   dailyTokens: number;
   lastResetAt: Date;
+  // Password reset: only the SHA-256 of the link token is stored
+  passwordResetTokenHash?: string;
+  passwordResetExpiresAt?: Date;
+  // Login brute-force protection
+  failedLoginCount?: number;
+  loginLockedUntil?: Date;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -28,6 +34,10 @@ const UserSchema = new Schema<IUser>(
     dailyRequests: { type: Number, min: 0, default: 0 },
     dailyTokens: { type: Number, min: 0, default: 0 },
     lastResetAt: { type: Date, required: true, default: Date.now },
+    passwordResetTokenHash: { type: String, index: true, sparse: true },
+    passwordResetExpiresAt: { type: Date },
+    failedLoginCount: { type: Number, min: 0, default: 0 },
+    loginLockedUntil: { type: Date },
   },
   {
     collection: 'users',

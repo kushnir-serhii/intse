@@ -3,6 +3,7 @@ export { ChatInput } from './ChatInput';
 export { ChatStatusBar } from './ChatStatusBar';
 export { ChatThread } from './ChatThread';
 export { CorrectionCard } from './CorrectionCard';
+export { DateDivider } from './DateDivider';
 export { EmptyState } from './EmptyState';
 export { MessageActions } from './MessageActions';
 export { MessageBubble } from './MessageBubble';

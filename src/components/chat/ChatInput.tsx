@@ -9,6 +9,7 @@ import {
   PiRepeatBold,
 } from 'react-icons/pi';
 
+import { Tooltip } from '@/components/ui';
 import { useNotification } from '@/hooks/useNotification';
 import { useSpeechToText } from '@/hooks/useSpeechToText';
 import { MAX_CUSTOM_INSTRUCTION_LENGTH } from '@/lib/systemPrompt';
@@ -19,6 +20,7 @@ import { langToSpeechCode } from '@/utils/langToSpeechCode';
 
 import { CharCounter } from './CharCounter';
 import { ChatStatusBar } from './ChatStatusBar';
+import { CHIP_TOOLTIPS, TOOLTIP_COPY } from './tooltipCopy';
 
 const SUGGESTIONS = ['Ask me a question', 'Say it slower', 'Explain'];
 
@@ -151,13 +153,20 @@ export function ChatInput({
   // currently listening, streaming a reply, or playing one back via TTS.
   // This re-arms after every turn, not just when auto-dialog first flips on.
   useEffect(() => {
-    if (autoDialogActive && !isListening && !isStreaming && speakingMessageId === null) {
+    if (
+      autoDialogActive &&
+      !disabled &&
+      !isListening &&
+      !isStreaming &&
+      speakingMessageId === null
+    ) {
       startListening();
-    } else if (!autoDialogActive && isListening) {
+    } else if ((!autoDialogActive || disabled) && isListening) {
       stopListening();
     }
   }, [
     autoDialogActive,
+    disabled,
     isListening,
     isStreaming,
     speakingMessageId,
@@ -221,6 +230,8 @@ export function ChatInput({
 
         if (response.status === 429) {
           useChatStore.getState().finalizeMessage(assistantId);
+          // Hands-free would otherwise re-arm the mic straight into another 429.
+          useChatStore.getState().setAutoDialogActive(false);
           onLimitReached?.();
           return;
         }
@@ -355,15 +366,16 @@ export function ChatInput({
             (the empty state offers its own). */}
         <div className={`no-scrollbar flex gap-1.5 overflow-x-auto ${hasMessages ? '' : 'hidden'}`}>
           {SUGGESTIONS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              disabled={controlsDisabled}
-              onClick={() => setInputValue(s)}
-              className="hover:border-accent-700 hover:text-accent-200 shrink-0 rounded-full border border-neutral-800 px-3 py-1.5 text-[13px] text-neutral-300 transition-colors disabled:opacity-40"
-            >
-              {s}
-            </button>
+            <Tooltip key={s} content={CHIP_TOOLTIPS[s]} side="top" className="shrink-0">
+              <button
+                type="button"
+                disabled={controlsDisabled}
+                onClick={() => setInputValue(s)}
+                className="hover:border-accent-700 hover:text-accent-200 shrink-0 rounded-full border border-neutral-800 px-3 py-1.5 text-[13px] text-neutral-300 transition-colors disabled:opacity-40"
+              >
+                {s}
+              </button>
+            </Tooltip>
           ))}
         </div>
 
@@ -392,21 +404,23 @@ export function ChatInput({
               className="text-ink w-full resize-none bg-transparent text-[15px] placeholder-neutral-500 focus:outline-none disabled:opacity-40"
             />
             <div className="flex items-center gap-1">
-              <button
-                type="button"
-                aria-label="Auto dialog"
-                aria-pressed={autoDialogActive}
-                disabled={controlsDisabled}
-                onClick={() => setAutoDialogActive(!autoDialogActive)}
-                className={`flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs transition-colors disabled:opacity-40 ${
-                  autoDialogActive
-                    ? 'bg-accent/12 text-accent-200'
-                    : 'hover:text-accent-300 text-neutral-500'
-                }`}
-              >
-                <PiRepeatBold className="text-[15px]" />
-                Auto dialog
-              </button>
+              <Tooltip content={TOOLTIP_COPY.autoDialog} side="top">
+                <button
+                  type="button"
+                  aria-label="Auto dialog"
+                  aria-pressed={autoDialogActive}
+                  disabled={controlsDisabled}
+                  onClick={() => setAutoDialogActive(!autoDialogActive)}
+                  className={`flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs transition-colors disabled:opacity-40 ${
+                    autoDialogActive
+                      ? 'bg-accent/12 text-accent-200'
+                      : 'hover:text-accent-300 text-neutral-500'
+                  }`}
+                >
+                  <PiRepeatBold className="text-[15px]" />
+                  Auto dialog
+                </button>
+              </Tooltip>
               <span className="flex-1" />
               {role === 'owner' && (
                 <button
@@ -425,33 +439,47 @@ export function ChatInput({
               {inputValue.length > 0 ? (
                 <CharCounter count={inputValue.length} />
               ) : apiKey === '' ? (
-                <span
-                  className={`text-xs tabular-nums ${
-                    messagesLeft === 0
-                      ? 'text-danger'
-                      : messagesLeft <= dailyRequestLimit * 0.2
-                        ? 'text-warning'
-                        : 'text-neutral-600'
-                  }`}
-                >
-                  {messagesLeft} left today
-                </span>
+                <Tooltip content={TOOLTIP_COPY.left} side="top" focusable>
+                  <span
+                    className={`text-xs tabular-nums ${
+                      messagesLeft === 0
+                        ? 'text-danger'
+                        : messagesLeft <= dailyRequestLimit * 0.2
+                          ? 'text-warning'
+                          : 'text-neutral-600'
+                    }`}
+                  >
+                    {messagesLeft} left today
+                  </span>
+                </Tooltip>
               ) : null}
             </div>
           </div>
 
           {/* Primary action: mic, or send when there's text */}
-          <button
-            type="button"
-            aria-label={hasText ? 'Send' : isListening ? 'Stop' : 'Hold to speak'}
-            disabled={disabled || (hasText ? false : !isSupported)}
-            onClick={() => (hasText ? void handleSubmit() : startListening())}
-            className={`border-accent bg-accent/10 text-accent-200 hover:bg-accent/18 grid h-14 w-14 shrink-0 place-items-center rounded-full border text-2xl shadow-[0_0_0_6px_rgba(145,132,217,0.10)] transition-colors disabled:opacity-40 ${
-              isListening ? 'animate-pulse' : ''
-            }`}
+          <Tooltip
+            content={
+              hasText
+                ? TOOLTIP_COPY.send
+                : isListening
+                  ? TOOLTIP_COPY.micListening
+                  : TOOLTIP_COPY.micIdle
+            }
+            side="top"
+            className="shrink-0"
           >
-            {hasText ? <PiPaperPlaneRightFill /> : <PiMicrophoneFill />}
-          </button>
+            <button
+              type="button"
+              aria-label={hasText ? 'Send' : isListening ? 'Stop' : 'Hold to speak'}
+              disabled={disabled || (hasText ? false : !isSupported)}
+              onClick={() => (hasText ? void handleSubmit() : startListening())}
+              className={`border-accent bg-accent/10 text-accent-200 hover:bg-accent/18 grid h-14 w-14 shrink-0 place-items-center rounded-full border text-2xl shadow-[0_0_0_6px_rgba(145,132,217,0.10)] transition-colors disabled:opacity-40 ${
+                isListening ? 'animate-pulse' : ''
+              }`}
+            >
+              {hasText ? <PiPaperPlaneRightFill /> : <PiMicrophoneFill />}
+            </button>
+          </Tooltip>
         </div>
       </div>
     </div>

@@ -14,7 +14,7 @@ export function LevelCard(): ReactElement {
       <p className="mb-4 text-sm text-neutral-500">
         How challenging the AI&rsquo;s language should be (CEFR).
       </p>
-      <div className="grid max-w-sm grid-cols-6 gap-1 rounded-[11px] bg-neutral-900 p-1">
+      <div className="grid w-full max-w-sm grid-cols-6 gap-1 rounded-[11px] bg-neutral-900 p-1">
         {CEFR_LEVELS.map((l) => (
           <button
             key={l}

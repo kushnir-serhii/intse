@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 import { NextRequest } from 'next/server';
 
+import { clearFailedLogins, lockMinutesLeft, registerFailedLogin } from '@/lib/auth/loginLock';
 import User from '@/lib/db/models/User';
 import { connectDB } from '@/lib/mongodb';
 
@@ -23,15 +24,25 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   await connectDB();
 
-  const user = await User.findOne({ username: username.trim() });
+  // New accounts are stored lowercase; older ones may keep their original casing
+  const trimmed = username.trim();
+  const user = await User.findOne({ username: { $in: [trimmed, trimmed.toLowerCase()] } });
   if (!user?.passwordHash) {
     return Response.json({ error: 'invalid_credentials' }, { status: 401 });
   }
 
+  const minutesLeft = lockMinutesLeft(user);
+  if (minutesLeft > 0) {
+    return Response.json({ error: 'too_many_attempts', minutesLeft }, { status: 429 });
+  }
+
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
+    await registerFailedLogin(user);
     return Response.json({ error: 'invalid_credentials' }, { status: 401 });
   }
+
+  await clearFailedLogins(user);
 
   const token = await new SignJWT({ sub: user.visitorId, role: user.role })
     .setProtectedHeader({ alg: 'HS256' })

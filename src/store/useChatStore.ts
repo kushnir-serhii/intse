@@ -41,6 +41,8 @@ interface ChatState {
   setAutoDialogActive: (v: boolean) => void;
   setSpeakingMessageId: (id: string | null) => void;
   deleteMessage: (id: string) => void;
+  /** Remove several messages at once (a whole day from the thread divider). */
+  deleteMessages: (ids: string[]) => void;
   initSessionId: () => void;
   setSessionSaved: (value: boolean) => void;
   loadSession: (messages: Message[], sessionId: string) => void;
@@ -135,6 +137,18 @@ export const useChatStore = create<ChatState>()(
           messages: state.messages.filter((msg) => msg.id !== id),
           speakingMessageId: state.speakingMessageId === id ? null : state.speakingMessageId,
         })),
+
+      deleteMessages: (ids) =>
+        set((state) => {
+          const doomed = new Set(ids);
+          return {
+            messages: state.messages.filter((msg) => !doomed.has(msg.id)),
+            speakingMessageId:
+              state.speakingMessageId && doomed.has(state.speakingMessageId)
+                ? null
+                : state.speakingMessageId,
+          };
+        }),
 
       loadSession: (messages, sessionId) =>
         set({
